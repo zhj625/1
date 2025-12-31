@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧图书 - 云端书城 Pro</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus/dist/index.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/vue-demi"></script>
+    <script src="https://unpkg.com/vue-router@4/dist/vue-router.global.js"></script>
+    <script src="https://unpkg.com/pinia@2/dist/pinia.iife.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/element-plus"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@element-plus/icons-vue"></script>
+
+    <style>
+        body { background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+        .glass-nav { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.3); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03); }
+
+        /* 交错入场动画 - FadeInUp */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .stagger-item {
+            opacity: 0;
+            animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* 图书卡片 - 增强悬停效果 */
+        .book-card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        }
+        .book-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 25px 50px -12px rgba(79, 70, 229, 0.2), 0 12px 24px -8px rgba(0, 0, 0, 0.1);
+        }
+        .book-card:active {
+            transform: translateY(-4px) scale(0.98);
+            transition: all 0.1s ease;
+        }
+        .book-card .cover-img { transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+        .book-card:hover .cover-img { transform: scale(1.08); }
+
+        /* 评论卡片 - 增强悬停效果 */
+        .review-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        .review-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.1), 0 8px 16px -8px rgba(0, 0, 0, 0.05);
+        }
+
+        /* 按钮点击效果 */
+        .btn-press {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-press:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px -6px rgba(79, 70, 229, 0.4);
+        }
+        .btn-press:active {
+            transform: scale(0.95) translateY(0);
+            box-shadow: 0 2px 8px -2px rgba(79, 70, 229, 0.3);
+            transition: all 0.1s ease;
+        }
+
+        /* 分类按钮点击效果 */
+        .cat-btn {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .cat-btn:active {
+            transform: scale(0.92);
+            transition: all 0.1s ease;
+        }
+
+        /* 通用可点击元素 */
+        .clickable {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .clickable:hover {
+            transform: translateY(-2px);
+        }
+        .clickable:active {
+            transform: scale(0.95);
+            transition: all 0.1s ease;
+        }
+
+        /* 图标按钮效果 */
+        .icon-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .icon-btn:hover {
+            transform: scale(1.1);
+        }
+        .icon-btn:active {
+            transform: scale(0.9);
+            transition: all 0.1s ease;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .custom-dialog .el-dialog { border-radius: 24px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+        .custom-dialog .el-dialog__header { display: none; }
+        .custom-dialog .el-dialog__body { padding: 0; overflow: hidden; }
+        .rank-num { font-family: 'Impact', sans-serif; font-style: italic; }
+
+        /* ========== 弹窗组合式进场动画 ========== */
+        /* 左侧封面从左滑入 */
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-60px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        /* 右侧信息从右滑入 */
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(60px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        /* 从上方落下 */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        /* 柔和淡入 */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        /* 从下方升起 */
+        @keyframes fadeInUpModal {
+            from {
+                opacity: 0;
+                transform: translateY(25px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-cover-section {
+            opacity: 0;
+            animation: slideInLeft 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .modal-info-section {
+            opacity: 0;
+            animation: slideInRight 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation-delay: 0.05s;
+        }
+        .modal-title-area {
+            opacity: 0;
+            animation: fadeInDown 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation-delay: 0.15s;
+        }
+        .modal-desc-area {
+            opacity: 0;
+            animation: fadeIn 0.6s ease-out forwards;
+            animation-delay: 0.25s;
+        }
+        .modal-action-area {
+            opacity: 0;
+            animation: fadeInUpModal 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation-delay: 0.35s;
+        }
+
+        /* 封面图片微交互 - 电影镜头推进感 */
+        .modal-cover-wrapper {
+            overflow: hidden;
+        }
+        .modal-cover-img {
+            transition: transform 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .modal-cover-wrapper:hover .modal-cover-img {
+            transform: scale(1.1);
+        }
+
+        /* 收藏按钮脉冲动画 */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        .fav-btn-pulse:hover {
+            animation: pulse 1s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"><router-view></router-view></div>
+
+    <script>
+        const { createApp, reactive, ref, computed, onMounted, watch } = Vue;
+        const { createRouter, createWebHashHistory, useRouter, useRoute } = VueRouter;
+        const { createPinia, defineStore } = Pinia;
+        const { ElMessage, ElMessageBox, ElNotification } = ElementPlus;
+
+        // --- 全局配置 & 工具函数 ---
+        const PLACEHOLDER_COVER = 'https://placehold.co/400x600/e2e8f0/475569?text=No+Cover';
+        const PLACEHOLDER_BANNER = 'https://placehold.co/1600x600/1e293b/ffffff?text=Library+Banner';
+        const PLACEHOLDER_AVATAR = 'https://placehold.co/100x100/4f46e5/ffffff?text=U';
+
+        const handleImgError = (e, type = 'cover') => {
+            const fallback = type === 'banner' ? PLACEHOLDER_BANNER : (type === 'avatar' ? PLACEHOLDER_AVATAR : PLACEHOLDER_COVER);
+            if (e.target.src !== fallback) { e.target.src = fallback; e.target.onerror = null; }
+        };
+
+        // --- API 配置 ---
+        const API_BASE_URL = 'http://localhost:8080/api';
+
+        // HTTP 请求封装
+        const http = {
+            getToken() {
+                return localStorage.getItem('user_token_pro') || '';
+            },
+            async request(url, options = {}) {
+                const token = this.getToken();
+                const headers = {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                    ...options.headers
+                };
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}${url}`, {
+                        ...options,
+                        headers
+                    });
+
+                    const result = await response.json();
+
+                    if (response.status === 401) {
+                        localStorage.removeItem('user_token_pro');
+                        localStorage.removeItem('user_info_pro');
+                        window.location.reload();
+                        throw new Error('登录已过期，请重新登录');
+                    }
+
+                    if (result.code !== 0) {
+                        throw new Error(result.message || '请求失败');
+                    }
+
+                    return result.data;
+                } catch (error) {
+                    if (error.message === 'Failed to fetch') {
+                        throw new Error('网络错误，请检查后端服务是否启动');
+                    }
+                    throw error;
+                }
+            },
+            get(url, params = {}) {
+                const queryString = new URLSearchParams(params).toString();
+                const fullUrl = queryString ? `${url}?${queryString}` : url;
+                return this.request(fullUrl, { method: 'GET' });
+            },
+            post(url, data) {
+                return this.request(url, { method: 'POST', body: JSON.stringify(data) });
+            },
+            put(url, data) {
+                return this.request(url, { method: 'PUT', body: JSON.stringify(data) });
+            },
+            delete(url) {
+                return this.request(url, { method: 'DELETE' });
+            }
+        };
+
+        // --- 后端 API ---
+        const api = {
+            // 登录
+            async login(data) {
+                const result = await http.post('/auth/login', data);
+                return {
+                    token: result.token,
+                    user: {
+                        id: result.user.id,
+                        username: result.user.username,
+                        role: result.user.role,
+                        avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'
+                    }
+                };
+            },
+            // 注册
+            async register(data) {
+                return await http.post('/auth/register', data);
+            },
+            // 获取图书列表
+            async getBooks(params = {}) {
+                const queryParams = {
+                    page: 1,
+                    size: 100
+                };
+                if (params.keyword) queryParams.keyword = params.keyword;
+                if (params.categoryId) queryParams.categoryId = params.categoryId;
+
+                const result = await http.get('/books', queryParams);
+                // 映射字段：后端 -> 前端
+                let list = (result.list || []).map(book => ({
+                    id: book.id,
+                    title: book.title,
+                    author: book.author,
+                    categoryId: book.categoryId,
+                    categoryName: book.categoryName,
+                    stock: book.availableCount,
+                    cover: book.coverUrl || PLACEHOLDER_COVER,
+                    price: book.price,
+                    rating: 9.0 + Math.random() * 0.9, // 后端暂无评分字段
+                    desc: book.description,
+                    date: book.createdAt ? book.createdAt.split('T')[0] : ''
+                }));
+
+                // 排序
+                if (params.type === 'new') {
+                    list = list.sort((a, b) => new Date(b.date) - new Date(a.date));
+                }
+                if (params.type === 'hot') {
+                    list = list.sort((a, b) => b.rating - a.rating);
+                }
+
+                return list;
+            },
+            // 获取分类
+            async getCategories() {
+                return await http.get('/categories');
+            },
+            // 借书
+            async borrowBook(bookId, userId) {
+                await http.post('/borrows', { bookId });
+            },
+            // 还书
+            async returnBook(id) {
+                await http.post(`/borrows/${id}/return`);
+            },
+            // 获取我的借阅记录
+            async getMyBorrows(userId) {
+                const result = await http.get('/borrows/my', { page: 1, size: 100 });
+                return (result.list || []).map(record => ({
+                    id: record.id,
+                    bookId: record.bookId,
+                    bookTitle: record.bookTitle,
+                    userId: record.userId,
+                    cover: record.bookCoverUrl || PLACEHOLDER_COVER,
+                    author: record.bookAuthor || '',
+                    borrowDate: record.borrowDate ? record.borrowDate.split('T')[0] : '',
+                    returnDate: record.returnDate ? record.returnDate.split('T')[0] : null,
+                    dueDate: record.dueDate ? record.dueDate.split('T')[0] : '',
+                    status: record.statusDesc
+                }));
+            },
+            // 评论相关（暂未实现）
+            async getReviews() {
+                // 返回本地存储的评论或默认评论
+                const stored = localStorage.getItem('lib_reviews_v3');
+                if (stored) return JSON.parse(stored);
+                return [
+                    { id: 1, bookId: 2, userId: 101, username: '逻辑面壁者', avatar: PLACEHOLDER_AVATAR, rating: 5, content: '这就是科幻的巅峰！', date: '2023-12-20', likes: 124, bookTitle: '三体全集' },
+                    { id: 2, bookId: 3, userId: 102, username: '马孔多雨季', avatar: PLACEHOLDER_AVATAR, rating: 5, content: '孤独是人类的宿命。', date: '2023-12-18', likes: 89, bookTitle: '百年孤独' }
+                ];
+            },
+            async addReview(review) {
+                const reviews = await this.getReviews();
+                const newReview = { id: Date.now(), likes: 0, date: new Date().toLocaleDateString(), ...review };
+                reviews.unshift(newReview);
+                localStorage.setItem('lib_reviews_v3', JSON.stringify(reviews));
+                return newReview;
+            },
+            async likeReview(id) {
+                const reviews = await this.getReviews();
+                const r = reviews.find(x => x.id === id);
+                if (r) {
+                    r.likes++;
+                    localStorage.setItem('lib_reviews_v3', JSON.stringify(reviews));
+                }
+            },
+            // 系统配置
+            async getConfig() {
+                return JSON.parse(localStorage.getItem('lib_sys_config_v3')) || {
+                    sysName: '智慧图书 - 云端书城 Pro',
+                    allowRegister: true,
+                    maintenance: false
+                };
+            },
+            // 收藏相关
+            async addFavorite(bookId, remark = '') {
+                return await http.post(`/favorites/${bookId}`, { remark });
+            },
+            async removeFavorite(bookId) {
+                return await http.delete(`/favorites/${bookId}`);
+            },
+            async getMyFavorites(page = 1, size = 100) {
+                const result = await http.get('/favorites', { page, size });
+                return (result.list || []).map(fav => ({
+                    id: fav.id,
+                    bookId: fav.bookId,
+                    bookTitle: fav.bookTitle,
+                    bookAuthor: fav.bookAuthor,
+                    cover: fav.bookCoverUrl || PLACEHOLDER_COVER,
+                    categoryName: fav.categoryName,
+                    createdAt: fav.createdAt ? fav.createdAt.split('T')[0] : '',
+                    remark: fav.remark
+                }));
+            },
+            async checkFavorite(bookId) {
+                return await http.get(`/favorites/check/${bookId}`);
+            }
+        };
+
+        const useUserStore = defineStore('user', () => {
+            const token = ref(localStorage.getItem('user_token_pro') || '');
+            const userInfo = ref(JSON.parse(localStorage.getItem('user_info_pro') || '{}'));
+            const login = (data) => { token.value = data.token; userInfo.value = data.user; localStorage.setItem('user_token_pro', data.token); localStorage.setItem('user_info_pro', JSON.stringify(data.user)); };
+            const logout = () => { token.value = ''; localStorage.removeItem('user_token_pro'); window.location.reload(); };
+            return { token, userInfo, login, logout };
+        });
+
+        // --- 组件 ---
+        const BookDetailModal = {
+            props: ['visible', 'book', 'isFavorited'],
+            emits: ['update:visible', 'borrow', 'toggleFavorite'],
+            setup() { return { handleImgError }; },
+            template: `
+                <el-dialog :model-value="visible" @update:model-value="$emit('update:visible', $event)" width="800px" align-center class="custom-dialog" :show-close="false" append-to-body :destroy-on-close="true">
+                    <div v-if="book" class="flex flex-col md:flex-row bg-white relative">
+                        <!-- 关闭按钮 -->
+                        <button @click="$emit('update:visible', false)" class="icon-btn absolute top-4 right-4 z-50 w-8 h-8 rounded-full bg-gray-100/80 backdrop-blur hover:bg-gray-200 flex items-center justify-center"><el-icon><Close /></el-icon></button>
+
+                        <!-- 左侧封面区域 - 从左滑入 -->
+                        <div class="modal-cover-section w-full md:w-5/12 h-64 md:h-[500px] relative modal-cover-wrapper">
+                            <img :src="book.cover" @error="handleImgError" class="modal-cover-img w-full h-full object-cover">
+                            <!-- 渐变遮罩 -->
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:to-black/10"></div>
+                            <!-- 收藏按钮 -->
+                            <button @click="$emit('toggleFavorite', book)"
+                                :class="['fav-btn-pulse absolute top-4 left-4 w-12 h-12 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm transition-all duration-300', isFavorited ? 'bg-red-500 text-white scale-110' : 'bg-white/80 text-gray-400 hover:text-red-500 hover:bg-white']">
+                                <el-icon size="24"><Star /></el-icon>
+                            </button>
+                            <!-- 评分徽章 (移动端显示) -->
+                            <div class="md:hidden absolute bottom-4 left-4 bg-white/90 backdrop-blur px-3 py-1.5 rounded-full text-sm font-bold text-amber-500 shadow-lg flex items-center gap-1">
+                                <el-icon><StarFilled /></el-icon> {{book.rating}}
+                            </div>
+                        </div>
+
+                        <!-- 右侧信息区域 - 从右滑入 -->
+                        <div class="modal-info-section flex-1 p-8 md:p-10 flex flex-col h-auto md:h-[500px]">
+                            <!-- 标题和评分区域 - 从上方落下 -->
+                            <div class="modal-title-area hidden md:block">
+                                <div class="flex items-center gap-3 mb-3">
+                                    <el-tag effect="dark" round class="border-none bg-gradient-to-r from-indigo-600 to-purple-600 !px-4">精选图书</el-tag>
+                                    <div class="flex items-center text-amber-400 text-sm gap-1">
+                                        <span class="text-base">★★★★★</span>
+                                        <span class="text-gray-500 font-bold ml-1">{{book.rating}}</span>
+                                    </div>
+                                </div>
+                                <h2 class="text-3xl font-extrabold text-gray-900 mb-2 leading-tight tracking-tight">{{book.title}}</h2>
+                                <p class="text-lg text-indigo-600 font-medium mb-6 flex items-center gap-2">
+                                    <el-icon class="text-gray-400"><User /></el-icon>
+                                    {{book.author}}
+                                </p>
+                            </div>
+
+                            <!-- 内容简介区域 - 柔和淡入 -->
+                            <div class="modal-desc-area bg-gradient-to-br from-gray-50 to-slate-50 p-5 rounded-2xl mb-6 flex-1 overflow-y-auto border border-gray-100">
+                                <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                    <el-icon><Document /></el-icon> 内容简介
+                                </h4>
+                                <p class="text-gray-600 leading-relaxed text-justify">{{book.desc}}</p>
+                            </div>
+
+                            <!-- 底部操作区域 - 从下方升起 -->
+                            <div class="modal-action-area mt-auto">
+                                <div class="flex items-end justify-between mb-6 pb-4 border-b border-gray-100">
+                                    <div>
+                                        <div class="text-xs text-gray-400 mb-1 uppercase tracking-wider">库存状态</div>
+                                        <div :class="['font-bold text-lg flex items-center gap-2', book.stock>0 ? 'text-green-600':'text-red-500']">
+                                            <span :class="['w-2 h-2 rounded-full', book.stock>0 ? 'bg-green-500 animate-pulse':'bg-red-500']"></span>
+                                            {{book.stock > 0 ? '现货 ' + book.stock + ' 本' : '暂时缺货'}}
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-xs text-gray-400 mb-1">售价</div>
+                                        <div class="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">¥{{book.price}}</div>
+                                    </div>
+                                </div>
+                                <div class="flex gap-3">
+                                    <el-button @click="$emit('toggleFavorite', book)" :type="isFavorited ? 'danger' : 'default'" size="large" class="btn-press !h-14 !rounded-xl !px-6 !text-base">
+                                        <el-icon class="mr-1"><Star /></el-icon>{{ isFavorited ? '已收藏' : '收藏' }}
+                                    </el-button>
+                                    <el-button type="primary" size="large" class="btn-press flex-1 !h-14 !rounded-xl !text-lg !font-bold shadow-xl shadow-indigo-200" color="#4f46e5" :disabled="book.stock<=0" @click="$emit('borrow', book)">
+                                        <el-icon class="mr-2" v-if="book.stock > 0"><ShoppingCart /></el-icon>
+                                        {{book.stock > 0 ? '立即借阅' : '缺货登记'}}
+                                    </el-button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </el-dialog>
+            `
+        };
+
+        const CommunityPage = {
+            template: `
+                <div class="container mx-auto px-4 py-8 min-h-screen">
+                    <div class="flex flex-col md:flex-row gap-8">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between mb-8 animate__animated animate__fadeInDown">
+                                <div>
+                                    <h2 class="text-3xl font-bold text-gray-800 flex items-center gap-2">
+                                        <el-icon class="text-green-600"><ChatLineSquare /></el-icon> 读者社区
+                                    </h2>
+                                    <p class="text-gray-500 mt-1">分享你的阅读感悟，发现更多好书</p>
+                                </div>
+                                <el-button type="primary" size="large" icon="EditPen" class="btn-press !rounded-xl !px-6 shadow-lg shadow-green-100" color="#059669" @click="openPublish">
+                                    写书评
+                                </el-button>
+                            </div>
+                            <div class="space-y-6">
+                                <div v-for="(review, index) in reviews" :key="review.id"
+                                    class="review-card stagger-item bg-white p-6 rounded-2xl border border-gray-100"
+                                    :style="{ animationDelay: (index * 0.1) + 's' }"
+                                >
+                                    <div class="flex items-start gap-4">
+                                        <el-avatar :src="review.avatar" size="large" @error="e => handleImgError(e, 'avatar')" class="flex-shrink-0" />
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex justify-between items-start">
+                                                <div>
+                                                    <div class="font-bold text-gray-800 text-lg">{{ review.username }}</div>
+                                                    <div class="flex items-center gap-2 text-sm text-gray-500 mt-0.5">
+                                                        <span>评</span> <span class="font-medium text-indigo-600 cursor-pointer hover:underline clickable" @click="goToBook(review.bookTitle)">《{{ review.bookTitle }}》</span>
+                                                        <el-rate v-model="review.rating" disabled size="small" text-color="#ff9900" />
+                                                        <span>{{ review.date }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="mt-4 text-gray-700 leading-relaxed text-justify whitespace-pre-wrap">{{ review.content }}</div>
+                                            <div class="mt-4 flex items-center gap-6">
+                                                <button @click="like(review)" class="icon-btn flex items-center gap-1.5 text-gray-400 hover:text-red-500 transition-colors group">
+                                                    <el-icon class="group-hover:scale-125 transition-transform"><sugar /></el-icon>
+                                                    <span class="text-sm font-bold">{{ review.likes }} 赞</span>
+                                                </button>
+                                                <button class="icon-btn flex items-center gap-1.5 text-gray-400 hover:text-indigo-500 transition-colors">
+                                                    <el-icon><ChatDotRound /></el-icon>
+                                                    <span class="text-sm font-bold">回复</span>
+                                                </button>
+                                                <button class="icon-btn flex items-center gap-1.5 text-gray-400 hover:text-indigo-500 transition-colors ml-auto">
+                                                    <el-icon><Share /></el-icon>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="w-full md:w-80 flex-shrink-0 space-y-6">
+                            <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-3xl p-6 border border-green-100 animate__animated animate__fadeInRight">
+                                <h3 class="font-bold text-gray-800 mb-2">👋 欢迎加入</h3>
+                                <p class="text-sm text-gray-600 mb-4">在这里，每一本书都能找到知音。请文明发言，共同维护良好的社区氛围。</p>
+                                <div class="flex -space-x-2 overflow-hidden">
+                                    <img v-for="i in 5" :key="i" :src="'https://placehold.co/100x100?text='+i" class="inline-block h-8 w-8 rounded-full ring-2 ring-white" />
+                                </div>
+                                <div class="text-xs text-gray-400 mt-2">1,203 位书友已加入</div>
+                            </div>
+                            <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 animate__animated animate__fadeInRight" style="animation-delay: 0.1s">
+                                <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2"><el-icon class="text-red-500"><CollectionTag /></el-icon> 热门话题</h3>
+                                <div class="space-y-3">
+                                    <div v-for="topic in topics" :key="topic" class="flex items-center justify-between text-sm text-gray-600 hover:text-indigo-600 cursor-pointer group">
+                                        <span># {{ topic.title }}</span>
+                                        <span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full group-hover:bg-indigo-50 group-hover:text-indigo-600">{{ topic.count }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <el-dialog v-model="publishVisible" title="发布书评" width="500px" align-center class="!rounded-2xl">
+                        <el-form :model="form" label-position="top">
+                            <el-form-item label="选择书籍">
+                                <el-select v-model="form.bookId" placeholder="请选择你看过的书" filterable class="w-full">
+                                    <el-option v-for="b in bookOptions" :key="b.id" :label="b.title" :value="b.id" />
+                                </el-select>
+                            </el-form-item>
+                            <el-form-item label="评价等级">
+                                <el-rate v-model="form.rating" show-text :texts="['极差', '失望', '一般', '推荐', '力荐']" />
+                            </el-form-item>
+                            <el-form-item label="书评内容">
+                                <el-input v-model="form.content" type="textarea" :rows="5" placeholder="写下你的真知灼见..." />
+                            </el-form-item>
+                        </el-form>
+                        <template #footer>
+                            <span class="dialog-footer">
+                                <el-button @click="publishVisible = false">取消</el-button>
+                                <el-button type="primary" color="#059669" @click="submitReview" :disabled="!form.bookId || !form.content">发布</el-button>
+                            </span>
+                        </template>
+                    </el-dialog>
+                </div>
+            `,
+            setup() {
+                const reviews = ref([]);
+                const bookOptions = ref([]);
+                const publishVisible = ref(false);
+                const userStore = useUserStore();
+                const router = useRouter();
+                
+                const form = reactive({ bookId: null, rating: 5, content: '' });
+                const topics = [
+                    { title: '年度必读书单', count: '2.3w' },
+                    { title: '科幻迷集合', count: '1.8w' },
+                    { title: '治愈系文学', count: '9k' },
+                    { title: '高效学习法', count: '5k' }
+                ];
+
+                const loadData = async () => {
+                    reviews.value = await api.getReviews();
+                    bookOptions.value = await api.getBooks(); // 获取所有书籍供选择
+                };
+
+                const openPublish = () => {
+                    form.bookId = null; form.rating = 5; form.content = '';
+                    publishVisible.value = true;
+                };
+
+                const submitReview = async () => {
+                    const book = bookOptions.value.find(b => b.id === form.bookId);
+                    if (!book) return;
+                    
+                    await api.addReview({
+                        bookId: book.id,
+                        bookTitle: book.title,
+                        userId: userStore.userInfo.id,
+                        username: userStore.userInfo.username,
+                        avatar: userStore.userInfo.avatar,
+                        rating: form.rating,
+                        content: form.content
+                    });
+                    
+                    ElMessage.success('发布成功！');
+                    publishVisible.value = false;
+                    loadData(); // 刷新列表
+                };
+
+                const like = async (review) => {
+                    await api.likeReview(review.id);
+                    review.likes++; // 乐观更新
+                };
+
+                const goToBook = (title) => {
+                    router.push(`/collection?keyword=${title}`);
+                };
+
+                onMounted(loadData);
+                return { reviews, topics, publishVisible, form, bookOptions, openPublish, submitReview, like, goToBook, handleImgError };
+            }
+        };
+
+        const CollectionPage = {
+            components: { BookDetailModal },
+            template: `
+                <div class="container mx-auto px-4 py-8 min-h-screen">
+                    <div class="flex items-center gap-4 mb-8 animate__animated animate__fadeInLeft">
+                        <el-button circle size="large" @click="$router.go(-1)"><el-icon><Back /></el-icon></el-button>
+                        <div>
+                            <h2 class="text-3xl font-bold text-gray-800">{{ pageTitle }}</h2>
+                            <p class="text-gray-500 text-sm mt-1">{{ pageSub }}</p>
+                        </div>
+                    </div>
+                    
+                    <div v-if="loading" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                        <el-skeleton v-for="i in 5" :key="i" animated><template #template><el-skeleton-item variant="image" class="h-64 rounded-2xl mb-2" /></template></el-skeleton>
+                    </div>
+                    <div v-else-if="books.length === 0" class="text-center py-20 text-gray-400">
+                        <el-empty description="暂时没有找到相关书籍" />
+                        <el-button @click="$router.push('/store')">返回首页</el-button>
+                    </div>
+                    <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-10">
+                        <div v-for="(book, index) in books" :key="book.id"
+                            class="book-card stagger-item bg-white p-3 rounded-3xl cursor-pointer group relative"
+                            :style="{ animationDelay: (index * 0.08) + 's' }"
+                            @click="openDetail(book)">
+                            <div class="relative rounded-2xl overflow-hidden aspect-[2/3] mb-4 shadow-sm bg-gray-100">
+                                <img :src="book.cover" @error="handleImgError" class="cover-img w-full h-full object-cover">
+                                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                                    <el-button type="primary" round size="small" class="btn-press w-full !font-bold">查看详情</el-button>
+                                </div>
+                                <div class="absolute top-2 right-2 bg-white/90 backdrop-blur px-2 py-0.5 rounded-lg text-xs font-bold text-amber-500 shadow-sm flex items-center"><el-icon class="mr-1"><StarFilled /></el-icon>{{book.rating}}</div>
+                            </div>
+                            <div class="px-1">
+                                <h3 class="font-bold text-base text-gray-800 truncate mb-1 group-hover:text-indigo-600 transition-colors">{{book.title}}</h3>
+                                <div class="flex justify-between items-center">
+                                    <p class="text-xs text-gray-500 truncate max-w-[60%]">{{book.author}}</p>
+                                    <p class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">¥{{book.price}}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <book-detail-modal v-model:visible="detailVisible" :book="selectedBook" :is-favorited="isFavorited" @borrow="handleBorrow" @toggle-favorite="handleToggleFavorite" />
+                </div>
+            `,
+            setup() {
+                const route = useRoute();
+                const router = useRouter();
+                const userStore = useUserStore();
+                const books = ref([]);
+                const loading = ref(false);
+                const detailVisible = ref(false);
+                const selectedBook = ref(null);
+                const isFavorited = ref(false);
+
+                const pageTitle = computed(() => {
+                    if (route.query.type === 'new') return '新书速递';
+                    if (route.query.type === 'hot') return '每日热榜';
+                    if (route.query.author) return `作者：${route.query.author}`;
+                    if (route.query.keyword) return `搜索：${route.query.keyword}`;
+                    return '精选图书';
+                });
+
+                const pageSub = computed(() => {
+                    if (route.query.type === 'new') return '探索最新上架的知识宝藏';
+                    if (route.query.type === 'hot') return '大家都在看的畅销好书';
+                    return `共找到 ${books.value.length} 本相关图书`;
+                });
+
+                const fetchData = async () => {
+                    loading.value = true;
+                    books.value = await api.getBooks(route.query);
+                    loading.value = false;
+                };
+
+                const openDetail = async (b) => {
+                    selectedBook.value = b;
+                    detailVisible.value = true;
+                    try {
+                        isFavorited.value = await api.checkFavorite(b.id);
+                    } catch(e) {
+                        isFavorited.value = false;
+                    }
+                };
+                const handleToggleFavorite = async (book) => {
+                    try {
+                        if (isFavorited.value) {
+                            await api.removeFavorite(book.id);
+                            isFavorited.value = false;
+                            ElMessage.success('已取消收藏');
+                        } else {
+                            await api.addFavorite(book.id);
+                            isFavorited.value = true;
+                            ElMessage.success('收藏成功');
+                        }
+                    } catch(e) {
+                        ElMessage.error(e.message);
+                    }
+                };
+                const handleBorrow = async (book) => {
+                    try {
+                        await ElMessageBox.confirm(`确定借阅《${book.title}》吗？`, '提示', { type: 'info' });
+                        await api.borrowBook(book.id, userStore.userInfo.id);
+                        ElNotification({ title: '借阅成功', type: 'success' });
+                        detailVisible.value = false;
+                        fetchData();
+                    } catch {}
+                };
+
+                watch(() => route.query, fetchData, { immediate: true });
+                return { books, loading, pageTitle, pageSub, detailVisible, selectedBook, isFavorited, openDetail, handleBorrow, handleToggleFavorite, handleImgError };
+            }
+        };
+
+        const StoreHome = {
+            components: { BookDetailModal },
+            template: `
+                <div class="pb-24">
+                    <div class="relative w-full h-[520px] overflow-hidden mb-8 group">
+                        <el-carousel trigger="click" height="520px" arrow="hover" :interval="5000">
+                            <el-carousel-item v-for="(item, index) in banners" :key="index">
+                                <div class="relative w-full h-full cursor-pointer" @click="handleBannerClick(item)">
+                                    <div class="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent z-10"></div>
+                                    <img :src="item.img" @error="e => handleImgError(e, 'banner')" class="w-full h-full object-cover transition-transform duration-[10s] ease-out group-hover:scale-105" />
+                                    <div class="absolute bottom-0 left-0 w-full p-12 md:p-20 z-20 flex flex-col items-start animate__animated animate__fadeInLeft">
+                                        <div class="bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full mb-4 tracking-widest uppercase">Featured</div>
+                                        <h2 class="text-4xl md:text-6xl font-bold text-white mb-4 leading-tight drop-shadow-lg max-w-2xl">{{item.title}}</h2>
+                                        <p class="text-lg md:text-xl text-gray-200 mb-8 max-w-xl font-light">{{item.sub}}</p>
+                                        <el-button size="large" round class="!px-10 !h-14 !text-base !font-bold !border-none bg-white text-gray-900 hover:scale-105 transition-transform shadow-2xl">
+                                            {{ item.btnText }} <el-icon class="ml-2"><Right /></el-icon>
+                                        </el-button>
+                                    </div>
+                                </div>
+                            </el-carousel-item>
+                        </el-carousel>
+                    </div>
+
+                    <div class="container mx-auto px-4 -mt-16 relative z-30 mb-16">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div v-for="(feat, idx) in featured" :key="idx"
+                                @click="handleFeaturedClick(feat)"
+                                class="bg-white p-6 rounded-2xl shadow-xl flex items-center gap-4 cursor-pointer hover:-translate-y-2 transition-transform animate__animated animate__fadeInUp"
+                                :style="{ animationDelay: idx * 0.1 + 's' }"
+                            >
+                                <div :class="['w-14 h-14 rounded-full flex items-center justify-center text-white text-2xl shadow-lg', feat.color]">
+                                    <el-icon><component :is="feat.icon" /></el-icon>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800 text-lg">{{feat.title}}</h4>
+                                    <p class="text-sm text-gray-500">{{feat.sub}}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="container mx-auto px-4 flex flex-col lg:flex-row gap-10">
+                        <div class="flex-1 min-w-0">
+                            <div class="sticky top-20 z-40 bg-white/95 backdrop-blur-xl p-4 rounded-2xl shadow-lg border border-gray-100 mb-8">
+                                <div class="flex flex-col gap-4">
+                                    <div class="flex items-center justify-between">
+                                        <h3 class="text-sm font-bold text-gray-500 flex items-center gap-2">
+                                            <el-icon class="text-indigo-500"><Grid /></el-icon> 图书分类
+                                        </h3>
+                                        <div class="relative w-64">
+                                            <el-input v-model="query.keyword" placeholder="搜索书名..." class="!rounded-full" prefix-icon="Search" clearable @input="fetchData" size="default" />
+                                        </div>
+                                    </div>
+                                    <div class="flex flex-wrap gap-2">
+                                        <button @click="toggleCat(null)" :class="['cat-btn px-4 py-2 rounded-xl text-sm font-semibold', !query.categoryId ? 'bg-gradient-to-r from-gray-800 to-gray-900 text-white shadow-lg shadow-gray-300' : 'bg-gray-50 text-gray-600 hover:bg-gray-100 hover:shadow-md']">
+                                            <span class="flex items-center gap-1"><el-icon><Folder /></el-icon> 全部</span>
+                                        </button>
+                                        <button v-for="c in categories" :key="c.id" @click="toggleCat(c.id)" :class="['cat-btn px-4 py-2 rounded-xl text-sm font-semibold', query.categoryId === c.id ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-200' : 'bg-gray-50 text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 hover:shadow-md']">
+                                            {{c.name}}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between mb-6">
+                                <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2"><el-icon class="text-indigo-600"><Collection /></el-icon> 馆藏资源</h2>
+                                <span class="text-sm text-gray-400">共 {{books.length}} 本图书</span>
+                            </div>
+
+                            <div v-if="loading" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                                 <el-skeleton v-for="i in 8" :key="i" animated><template #template><el-skeleton-item variant="image" class="h-64 rounded-2xl mb-2" /><el-skeleton-item variant="p" class="w-2/3" /></template></el-skeleton>
+                            </div>
+
+                            <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
+                                <div v-for="(book, index) in books" :key="book.id"
+                                    class="book-card stagger-item bg-white p-3 rounded-3xl cursor-pointer group relative"
+                                    :style="{ animationDelay: (index * 0.08) + 's' }"
+                                    @click="openDetail(book)">
+                                    <div class="relative rounded-2xl overflow-hidden aspect-[2/3] mb-4 shadow-sm bg-gray-100">
+                                        <img :src="book.cover" @error="handleImgError" class="cover-img w-full h-full object-cover">
+                                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                                            <el-button type="primary" round size="small" class="btn-press w-full !font-bold">查看详情</el-button>
+                                        </div>
+                                        <div class="absolute top-2 right-2 bg-white/90 backdrop-blur px-2 py-0.5 rounded-lg text-xs font-bold text-amber-500 shadow-sm flex items-center"><el-icon class="mr-1"><StarFilled /></el-icon>{{book.rating.toFixed(1)}}</div>
+                                    </div>
+                                    <div class="px-1">
+                                        <h3 class="font-bold text-base text-gray-800 truncate mb-1 group-hover:text-indigo-600 transition-colors">{{book.title}}</h3>
+                                        <div class="flex justify-between items-center">
+                                            <p class="text-xs text-gray-500 truncate max-w-[60%]">{{book.author}}</p>
+                                            <p class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">¥{{book.price}}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="w-full lg:w-80 flex-shrink-0">
+                            <div class="lg:sticky lg:top-24 space-y-6">
+                            <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 animate__animated animate__fadeInRight">
+                                <div class="flex items-center justify-between mb-6">
+                                    <h3 class="font-bold text-lg text-gray-800 flex items-center gap-2"><el-icon class="text-orange-500"><Trophy /></el-icon> 每日热榜</h3>
+                                    <el-button link type="primary" size="small" @click="$router.push('/collection?type=hot')">全部</el-button>
+                                </div>
+                                <div class="space-y-5">
+                                    <div v-for="(book, idx) in hotBooks" :key="book.id"
+                                        class="clickable flex items-center gap-4 cursor-pointer group p-2 -mx-2 rounded-xl hover:bg-gray-50"
+                                        @click="openDetail(book)">
+                                        <div class="relative w-12 h-16 flex-shrink-0 rounded overflow-hidden shadow-sm">
+                                            <img :src="book.cover" @error="handleImgError" class="w-full h-full object-cover">
+                                            <div v-if="idx < 3" :class="['absolute top-0 left-0 w-5 h-5 flex items-center justify-center text-[10px] font-bold text-white rounded-br-lg', idx===0?'bg-yellow-400':idx===1?'bg-gray-400':'bg-amber-600']">{{idx+1}}</div>
+                                            <div v-else class="absolute top-0 left-0 w-5 h-5 flex items-center justify-center text-[10px] font-bold text-gray-500 bg-gray-100 rounded-br-lg">{{idx+1}}</div>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <h4 class="text-sm font-bold text-gray-800 truncate group-hover:text-indigo-600 transition-colors">{{book.title}}</h4>
+                                            <div class="flex items-center gap-2 mt-1"><div class="flex text-[10px] text-amber-400">★★★★★</div><span class="text-xs text-gray-400">{{book.rating.toFixed(1)}}</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-3xl shadow-lg p-6 text-white relative overflow-hidden group cursor-pointer clickable animate__animated animate__fadeInRight"
+                                style="animation-delay: 0.1s"
+                                @click="$router.push('/collection?keyword=Java')"
+                            >
+                                <div class="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+                                <div class="relative z-10">
+                                    <div class="text-xs font-bold text-indigo-200 mb-2 uppercase tracking-widest">Category Spotlight</div>
+                                    <h3 class="text-xl font-bold mb-1">计算机编程</h3>
+                                    <p class="text-sm text-indigo-100 mb-4 opacity-80">探索编程世界的无限可能。</p>
+                                    <el-button size="small" round class="btn-press !bg-white/20 !border-none !text-white hover:!bg-white/30">查看更多</el-button>
+                                </div>
+                                <img src="https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=200&q=80" class="absolute -bottom-4 -right-4 w-24 h-24 object-cover rounded-full border-4 border-indigo-500/30 opacity-50 group-hover:opacity-100 group-hover:scale-110 transition-all">
+                            </div>
+
+                            <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 animate__animated animate__fadeInRight" style="animation-delay: 0.2s">
+                                <h3 class="font-bold text-lg text-gray-800 mb-4 flex items-center gap-2"><el-icon><PriceTag /></el-icon> 热门分类</h3>
+                                <div class="flex flex-wrap gap-2">
+                                    <span v-for="cat in categories.slice(0, 8)" :key="cat.id"
+                                        @click="$router.push('/collection?categoryId=' + cat.id)"
+                                        class="cat-btn px-3 py-1.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-full hover:bg-indigo-50 hover:text-indigo-600 cursor-pointer"
+                                    ># {{cat.name}}</span>
+                                </div>
+                            </div>
+                            </div>
+                        </div>
+                    </div>
+                    <book-detail-modal v-model:visible="detailVisible" :book="selectedBook" :is-favorited="isFavorited" @borrow="handleBorrow" @toggle-favorite="handleToggleFavorite" />
+                </div>
+            `,
+            setup() {
+                const books = ref([]);
+                const loading = ref(false);
+                const query = reactive({ categoryId: null, keyword: '' });
+                const detailVisible = ref(false);
+                const selectedBook = ref(null);
+                const isFavorited = ref(false);
+                const router = useRouter();
+                const userStore = useUserStore();
+                const categories = ref([]);
+
+                const hotBooks = computed(() => [...books.value].sort((a, b) => b.rating - a.rating).slice(0, 5));
+
+                const banners = [
+                    { img: 'https://images.unsplash.com/photo-1507842217121-9e93a5f63a81?auto=format&fit=crop&w=1600&q=80', title: '开启阅读新纪元', sub: '在这个数字时代，重拾纸墨书香的感动。', btnText: '浏览全部', link: '/collection' },
+                    { img: 'https://images.unsplash.com/photo-1491841550275-ad7854e35ca6?auto=format&fit=crop&w=1600&q=80', title: '新书速递', sub: '本月新增 500+ 本好书，等你来借。', btnText: '查看新书', link: '/collection?type=new' },
+                    { img: 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=1600&q=80', title: '探索未知边界', sub: '精选科技与人文好书。', btnText: '热门推荐', link: '/collection?type=hot' }
+                ];
+
+                const featured = [
+                    { title: '新书速递', sub: '最新上架图书', icon: 'Timer', color: 'bg-blue-500', link: '/collection?type=new' },
+                    { title: '借阅排行', sub: '大家都在看', icon: 'Trophy', color: 'bg-orange-500', link: '/collection?type=hot' },
+                    { title: '读者社区', sub: '分享阅读感悟', icon: 'ChatLineSquare', color: 'bg-green-500', link: '/community' },
+                ];
+
+                const loadCategories = async () => {
+                    try {
+                        const tree = await api.getCategories();
+                        // 展平分类树
+                        const flatten = (cats, result = []) => {
+                            cats.forEach(cat => {
+                                result.push({ id: cat.id, name: cat.name });
+                                if (cat.children && cat.children.length) flatten(cat.children, result);
+                            });
+                            return result;
+                        };
+                        categories.value = flatten(tree);
+                    } catch(e) {
+                        console.error('加载分类失败', e);
+                        // 使用默认分类
+                        categories.value = [
+                            {id:1, name:'文学'}, {id:2, name:'计算机'}, {id:3, name:'历史'}, {id:4, name:'经济'}
+                        ];
+                    }
+                };
+
+                const fetchData = async () => {
+                    loading.value = true;
+                    try {
+                        books.value = await api.getBooks(query);
+                    } catch(e) {
+                        ElMessage.error(e.message);
+                    } finally {
+                        loading.value = false;
+                    }
+                };
+                const toggleCat = (id) => { query.categoryId = query.categoryId === id ? null : id; fetchData(); };
+                const openDetail = async (b) => {
+                    selectedBook.value = b;
+                    detailVisible.value = true;
+                    try {
+                        isFavorited.value = await api.checkFavorite(b.id);
+                    } catch(e) {
+                        isFavorited.value = false;
+                    }
+                };
+                const handleToggleFavorite = async (book) => {
+                    try {
+                        if (isFavorited.value) {
+                            await api.removeFavorite(book.id);
+                            isFavorited.value = false;
+                            ElMessage.success('已取消收藏');
+                        } else {
+                            await api.addFavorite(book.id);
+                            isFavorited.value = true;
+                            ElMessage.success('收藏成功');
+                        }
+                    } catch(e) {
+                        ElMessage.error(e.message);
+                    }
+                };
+                const handleBorrow = async (book) => {
+                    try {
+                        await ElMessageBox.confirm(`确定借阅《${book.title}》吗？`);
+                        await api.borrowBook(book.id, userStore.userInfo.id);
+                        ElNotification({ title: '借阅成功', type: 'success' });
+                        detailVisible.value = false;
+                        fetchData();
+                    } catch(e) {
+                        if (e !== 'cancel' && e.message) ElMessage.error(e.message);
+                    }
+                };
+
+                const handleBannerClick = (item) => { if(item.link) router.push(item.link); };
+                const handleFeaturedClick = (item) => { if(item.link) router.push(item.link); };
+
+                onMounted(() => {
+                    fetchData();
+                    loadCategories();
+                });
+                return { books, loading, query, banners, featured, categories, detailVisible, selectedBook, isFavorited, hotBooks, toggleCat, fetchData, openDetail, handleBorrow, handleToggleFavorite, handleBannerClick, handleFeaturedClick, handleImgError };
+            }
+        };
+
+        const StoreShelf = {
+            components: { BookDetailModal },
+            template: `
+                <div class="container mx-auto px-4 py-12 min-h-screen">
+                    <h2 class="text-3xl font-bold mb-8 text-gray-800 animate__animated animate__fadeInLeft">我的书架</h2>
+                    <div class="grid gap-6 animate__animated animate__fadeInUp">
+                        <div v-for="item in list" :key="item.id" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-6 hover:shadow-md transition-shadow">
+                            <div class="w-20 h-28 flex-shrink-0 rounded-lg overflow-hidden bg-gray-200">
+                                <img :src="item.cover" @error="handleImgError" class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-3 mb-1">
+                                    <h3 class="text-xl font-bold text-gray-800 truncate">{{item.bookTitle}}</h3>
+                                    <el-tag :type="item.status==='借阅中'?'warning':'success'" effect="dark" round size="small">{{item.status}}</el-tag>
+                                </div>
+                                <p class="text-gray-500 text-sm mb-3">作者: {{item.author || '未知'}}</p>
+                                <div class="text-xs text-gray-400">借阅日期: {{item.borrowDate}}</div>
+                            </div>
+                            <div>
+                                <el-button v-if="item.status==='借阅中'" type="primary" round class="btn-press !px-6 shadow-lg shadow-indigo-100" @click="ret(item)">归还图书</el-button>
+                                <div v-else class="text-green-600 font-bold text-sm px-4">已归还</div>
+                            </div>
+                        </div>
+                        <div v-if="list.length === 0" class="text-center py-20">
+                            <img src="https://illustrations.popsy.co/gray/surr-reading.svg" class="h-48 mx-auto mb-6 opacity-50">
+                            <p class="text-gray-400">书架空空如也，快去书城看看吧</p>
+                            <el-button class="mt-4" @click="$router.push('/store')">去逛逛</el-button>
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const list = ref([]);
+                const userStore = useUserStore();
+                const load = async () => list.value = await api.getMyBorrows(userStore.userInfo.id);
+                const ret = async (row) => { await ElMessageBox.confirm(`确认归还《${row.bookTitle}》?`); await api.returnBook(row.id); ElMessage.success('已归还'); load(); };
+                onMounted(load);
+                return { list, ret, handleImgError };
+            }
+        };
+
+        const FavoritesPage = {
+            template: `
+                <div class="container mx-auto px-4 py-12 min-h-screen">
+                    <div class="flex items-center justify-between mb-8">
+                        <h2 class="text-3xl font-bold text-gray-800 animate__animated animate__fadeInLeft flex items-center gap-3">
+                            <el-icon class="text-red-500"><Star /></el-icon> 我的收藏
+                        </h2>
+                        <span class="text-gray-400">共 {{ list.length }} 本</span>
+                    </div>
+                    <div v-if="loading" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                        <el-skeleton v-for="i in 5" :key="i" animated><template #template><el-skeleton-item variant="image" class="h-64 rounded-2xl mb-2" /></template></el-skeleton>
+                    </div>
+                    <div v-else-if="list.length === 0" class="text-center py-20">
+                        <img src="https://illustrations.popsy.co/gray/heart.svg" class="h-48 mx-auto mb-6 opacity-50">
+                        <p class="text-gray-400 mb-4">还没有收藏任何图书</p>
+                        <el-button type="primary" @click="$router.push('/store')">去逛逛书城</el-button>
+                    </div>
+                    <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-10">
+                        <div v-for="(item, index) in list" :key="item.id"
+                            class="book-card stagger-item bg-white p-3 rounded-3xl cursor-pointer group relative"
+                            :style="{ animationDelay: (index * 0.08) + 's' }">
+                            <div class="relative rounded-2xl overflow-hidden aspect-[2/3] mb-4 shadow-sm bg-gray-100">
+                                <img :src="item.cover" @error="handleImgError" class="cover-img w-full h-full object-cover">
+                                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 gap-2">
+                                    <el-button type="primary" round class="btn-press w-full !h-10 !font-bold !text-sm !px-0 !mx-0" @click="$router.push('/store')">查看详情</el-button>
+                                    <el-button type="danger" round class="btn-press w-full !h-10 !font-bold !text-sm !px-0 !mx-0" @click.stop="removeFav(item)">取消收藏</el-button>
+                                </div>
+                                <button @click.stop="removeFav(item)" class="icon-btn absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg hover:bg-red-600">
+                                    <el-icon><Star /></el-icon>
+                                </button>
+                            </div>
+                            <div class="px-1">
+                                <h3 class="font-bold text-base text-gray-800 truncate mb-1 group-hover:text-indigo-600 transition-colors">{{ item.bookTitle }}</h3>
+                                <div class="flex justify-between items-center">
+                                    <p class="text-xs text-gray-500 truncate max-w-[60%]">{{ item.bookAuthor }}</p>
+                                    <p class="text-xs text-gray-400">{{ item.createdAt }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const list = ref([]);
+                const loading = ref(false);
+                const load = async () => {
+                    loading.value = true;
+                    try {
+                        list.value = await api.getMyFavorites();
+                    } catch(e) {
+                        ElMessage.error(e.message);
+                    } finally {
+                        loading.value = false;
+                    }
+                };
+                const removeFav = async (item) => {
+                    try {
+                        await ElMessageBox.confirm(`确定取消收藏《${item.bookTitle}》吗？`);
+                        await api.removeFavorite(item.bookId);
+                        ElMessage.success('已取消收藏');
+                        load();
+                    } catch(e) {
+                        if (e !== 'cancel' && e.message) ElMessage.error(e.message);
+                    }
+                };
+                onMounted(load);
+                return { list, loading, removeFav, handleImgError };
+            }
+        };
+
+        const Login = {
+            template: `
+                <div class="min-h-screen flex relative bg-gray-900 overflow-hidden">
+                    <div class="absolute inset-0 z-0">
+                        <img src="https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=2000&q=80" @error="e => handleImgError(e, 'banner')" class="w-full h-full object-cover opacity-40">
+                    </div>
+                    <div class="relative z-10 w-full flex items-center justify-center p-4">
+                        <div class="bg-white/10 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/20 w-full max-w-md text-center animate__animated animate__fadeInDown">
+                            <div class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                                <el-icon class="text-indigo-600" size="32"><Reading /></el-icon>
+                            </div>
+                            <h1 class="text-3xl font-bold text-white mb-2">{{ sysName }}</h1>
+                            <p class="text-gray-300 mb-8 font-light">探索 · 发现 · 阅读</p>
+
+                            <el-form v-if="showLoginForm" :model="loginForm" class="text-left mb-4">
+                                <el-form-item>
+                                    <el-input v-model="loginForm.username" placeholder="用户名" prefix-icon="User" size="large" class="!rounded-xl" />
+                                </el-form-item>
+                                <el-form-item>
+                                    <el-input v-model="loginForm.password" type="password" placeholder="密码" prefix-icon="Lock" size="large" show-password class="!rounded-xl" />
+                                </el-form-item>
+                            </el-form>
+
+                            <div class="flex flex-col gap-3">
+                                <el-button v-if="showLoginForm" color="#4f46e5" size="large" class="btn-press w-full !h-14 !text-lg !font-bold !rounded-xl !px-0 !mx-0 shadow-xl shadow-indigo-900/50" :loading="loading" @click="handleLogin">
+                                    登录
+                                </el-button>
+                                <el-button v-else color="#4f46e5" size="large" class="btn-press w-full !h-14 !text-lg !font-bold !rounded-xl !px-0 !mx-0 shadow-xl shadow-indigo-900/50" @click="showLoginForm = true">
+                                    进入图书馆
+                                </el-button>
+                                <el-button size="large" class="btn-press w-full !h-14 !text-lg !font-bold !rounded-xl !px-0 !mx-0 !bg-white/20 !border-white/30 !text-white hover:!bg-white/30" @click="handleRegister">
+                                    注册新账号
+                                </el-button>
+                            </div>
+                            <div class="mt-4 text-gray-400 text-xs">
+                                提示：可使用 admin/admin123 登录
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 注册弹窗 -->
+                    <el-dialog v-model="registerVisible" title="注册新账号" width="400px" align-center class="!rounded-2xl">
+                        <el-form :model="registerForm" label-position="top">
+                            <el-form-item label="用户名" required>
+                                <el-input v-model="registerForm.username" placeholder="请输入用户名" />
+                            </el-form-item>
+                            <el-form-item label="密码" required>
+                                <el-input v-model="registerForm.password" type="password" placeholder="请输入密码" show-password />
+                            </el-form-item>
+                            <el-form-item label="真实姓名">
+                                <el-input v-model="registerForm.realName" placeholder="请输入真实姓名" />
+                            </el-form-item>
+                            <el-form-item label="邮箱">
+                                <el-input v-model="registerForm.email" placeholder="请输入邮箱" />
+                            </el-form-item>
+                            <el-form-item label="手机号">
+                                <el-input v-model="registerForm.phone" placeholder="请输入手机号" />
+                            </el-form-item>
+                        </el-form>
+                        <template #footer>
+                            <el-button @click="registerVisible = false">取消</el-button>
+                            <el-button type="primary" :loading="registerLoading" @click="submitRegister">注册</el-button>
+                        </template>
+                    </el-dialog>
+                </div>
+            `,
+            setup() {
+                const router = useRouter(); const store = useUserStore();
+                const sysName = ref('云端书城');
+                const config = ref({});
+                const showLoginForm = ref(true);
+                const loading = ref(false);
+                const loginForm = reactive({ username: '', password: '' });
+
+                const registerVisible = ref(false);
+                const registerLoading = ref(false);
+                const registerForm = reactive({
+                    username: '',
+                    password: '',
+                    realName: '',
+                    email: '',
+                    phone: ''
+                });
+
+                onMounted(async () => {
+                    try {
+                        const c = await api.getConfig();
+                        if(c) {
+                            sysName.value = c.sysName;
+                            config.value = c;
+                        }
+                    } catch(e) {
+                        console.log('获取配置失败', e);
+                    }
+                });
+
+                const handleLogin = async () => {
+                    if (!loginForm.username || !loginForm.password) {
+                        return ElMessage.warning('请输入用户名和密码');
+                    }
+                    loading.value = true;
+                    try {
+                        const res = await api.login(loginForm);
+                        store.login(res);
+                        ElMessage.success('登录成功');
+                        router.push('/store');
+                    } catch(e) {
+                        ElMessage.error(e.message);
+                    } finally {
+                        loading.value = false;
+                    }
+                };
+
+                const handleRegister = () => {
+                    if(config.value && config.value.allowRegister === false) {
+                        ElMessage.error('抱歉，目前系统暂停开放注册');
+                    } else {
+                        registerVisible.value = true;
+                    }
+                };
+
+                const submitRegister = async () => {
+                    if (!registerForm.username || !registerForm.password) {
+                        return ElMessage.warning('请填写用户名和密码');
+                    }
+                    registerLoading.value = true;
+                    try {
+                        await api.register(registerForm);
+                        ElMessage.success('注册成功，请登录');
+                        registerVisible.value = false;
+                        loginForm.username = registerForm.username;
+                        loginForm.password = '';
+                        // 清空注册表单
+                        Object.assign(registerForm, { username: '', password: '', realName: '', email: '', phone: '' });
+                    } catch(e) {
+                        ElMessage.error(e.message);
+                    } finally {
+                        registerLoading.value = false;
+                    }
+                };
+
+                return { handleLogin, handleRegister, sysName, handleImgError, showLoginForm, loading, loginForm, registerVisible, registerForm, registerLoading, submitRegister };
+            }
+        };
+
+        const UserLayout = {
+            template: `
+                <div class="min-h-screen flex flex-col">
+                    <header class="glass-nav sticky top-0 z-50 px-6 py-4 flex justify-between items-center transition-all">
+                        <div class="flex items-center gap-3 cursor-pointer group" @click="$router.push('/store')">
+                            <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg group-hover:scale-105 transition-transform">
+                                <el-icon size="20"><Reading /></el-icon>
+                            </div>
+                            <span class="text-xl font-extrabold text-gray-800 tracking-tight">{{ sysName }} <span class="text-indigo-600">Pro</span></span>
+                        </div>
+                        <div class="flex items-center gap-6">
+                            <nav class="hidden md:flex items-center gap-6">
+                                <router-link to="/store" class="font-bold text-gray-500 hover:text-indigo-600 transition-colors" active-class="text-indigo-600 !font-extrabold">首页</router-link>
+                                <router-link to="/shelf" class="font-bold text-gray-500 hover:text-indigo-600 transition-colors" active-class="text-indigo-600 !font-extrabold">我的书架</router-link>
+                                <router-link to="/favorites" class="font-bold text-gray-500 hover:text-red-500 transition-colors" active-class="text-red-500 !font-extrabold">我的收藏</router-link>
+                                <router-link to="/community" class="font-bold text-gray-500 hover:text-indigo-600 transition-colors" active-class="text-indigo-600 !font-extrabold">社区</router-link>
+                            </nav>
+                            <div class="w-px h-6 bg-gray-300 hidden md:block"></div>
+                            <div class="flex items-center gap-3">
+                                <el-avatar :size="36" :src="userStore.userInfo.avatar" @error="e => handleImgError(e, 'avatar')" class="border-2 border-white shadow-sm cursor-pointer hover:scale-105 transition-transform" />
+                                <button class="text-sm font-bold text-gray-500 hover:text-red-500 transition-colors" @click="userStore.logout">退出</button>
+                            </div>
+                        </div>
+                    </header>
+                    <main class="flex-1">
+                        <router-view v-slot="{ Component }">
+                            <transition name="el-fade-in-linear" mode="out-in">
+                                <component :is="Component" />
+                            </transition>
+                        </router-view>
+                    </main>
+                    <footer class="bg-white py-10 mt-12 border-t border-gray-100">
+                        <div class="text-center text-gray-400 text-sm">
+                            <p class="mb-2 font-bold text-gray-300 text-lg">{{ sysName }} Pro</p>
+                            <p>&copy; 2025 Designed for Readers.</p>
+                        </div>
+                    </footer>
+                </div>
+            `,
+            setup() {
+                const sysName = ref('云端书城');
+                onMounted(async () => {
+                    const c = await api.getConfig();
+                    if(c) sysName.value = c.sysName;
+                });
+                return { userStore: useUserStore(), sysName, handleImgError };
+            }
+        };
+
+        const Maintenance = {
+            template: `
+                <div class="h-screen flex flex-col items-center justify-center bg-gray-100 p-4 text-center">
+                    <el-icon size="64" class="text-gray-400 mb-4"><Tools /></el-icon>
+                    <h1 class="text-3xl font-bold text-gray-800 mb-2">系统维护中</h1>
+                    <p class="text-gray-500 max-w-md">为了提供更好的服务，系统正在进行升级维护。请稍后再访问。</p>
+                </div>
+            `
+        };
+
+        const routes = [
+            { path: '/login', component: Login },
+            { path: '/maintenance', component: Maintenance },
+            { path: '/', component: UserLayout, redirect: '/store', children: [
+                { path: 'store', component: StoreHome },
+                { path: 'shelf', component: StoreShelf },
+                { path: 'favorites', component: FavoritesPage },
+                { path: 'collection', component: CollectionPage },
+                { path: 'community', component: CommunityPage }
+            ]}
+        ];
+        const router = createRouter({history:createWebHashHistory(), routes});
+        
+        // 全局路由守卫
+        router.beforeEach(async (to, from, next) => {
+            const config = await api.getConfig();
+            if (config && config.maintenance && to.path !== '/maintenance') {
+                return next('/maintenance');
+            }
+            if (!config.maintenance && to.path === '/maintenance') {
+                return next('/login');
+            }
+
+            const s = useUserStore();
+            if(to.path === '/login') return next();
+            if(!s.token) return next('/login');
+            next();
+        });
+
+        const app = createApp({template:`<router-view></router-view>`});
+        for(const [k,v] of Object.entries(ElementPlusIconsVue)) app.component(k,v);
+        app.use(createPinia()).use(router).use(ElementPlus).mount('#app');
+    </script>
+</body>
+</html>

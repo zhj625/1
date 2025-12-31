@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn spring-boot:run:*)",
+      "Bash(curl:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc2NjU3MDU4MSwiZXhwIjoxNzY2NjU2OTgxfQ.h_yIMM6AnNVMQVhum8mhpcF2CUSOUYrhOeQxbUb1ZIU3XhED5PKehIiLWi2krBH9zgIktWmZlCeFh_336hJWTg\")",
+      "Bash(__NEW_LINE__ echo \"=== 获取图书列表 ===\")",
+      "Bash(__NEW_LINE__ echo -e \"\\\\n\\\\n=== 获取分类树 ===\")",
+      "Bash(__NEW_LINE__ echo -e \"\\\\n\\\\n=== 获取当前用户 ===\")",
+      "Bash(timeout /t 10 /nobreak)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc2NjU3MzEwNywiZXhwIjoxNzY2NjU5NTA3fQ.QDuoId5LTkWg3GecYIxvx9HGWspI-R1rqFVJ90UCDSJ-08uBMrugadfaHXdkdur-tSjJb_9AFjT-CnkhEFz1aw\")",
+      "Bash(timeout /t 30 /nobreak)",
+      "Bash(ping:*)",
+      "Bash(mvn compile:*)",
+      "Bash(timeout /t 15 /nobreak)",
+      "Bash(dir /s /b \"D:\\\\桌面\\\\1\")",
+      "Bash(dir:*)",
+      "Bash(cmd /c \"taskkill /F /PID 13556\")",
+      "Bash(wmic process where \"ProcessId=13556\" delete)",
+      "Bash(cmd /c \"cd /d D:\\\\桌面\\\\1\\\\library-management && mvn compile -q\")",
+      "Bash(cmd /c \"netstat -ano | findstr :8080\")",
+      "Bash(cmd /c \"cd /d D:\\\\桌面\\\\1\\\\library-management && mvn spring-boot:run\")",
+      "Bash(timeout /t 20 /nobreak)",
+      "Bash(cmd /c \"timeout /t 20 /nobreak\")",
+      "Bash(cmd /c \"taskkill /F /PID 9264 2>nul & echo killed || echo not running\")",
+      "Bash(powershell -Command \"cd ''D:\\\\桌面\\\\1\\\\library-management''; mvn spring-boot:run\")",
+      "Bash(cmd /c \"taskkill /F /PID 9264\")",
+      "Bash(wmic process where \"ProcessId=9264\" delete)"
+    ]
+  }
+}

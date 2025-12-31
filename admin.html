@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧图书 - 管理控制台</title>
+    <!-- 引入资源 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus/dist/index.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/vue-demi"></script>
+    <script src="https://unpkg.com/vue-router@4/dist/vue-router.global.js"></script>
+    <script src="https://unpkg.com/pinia@2/dist/pinia.iife.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/element-plus"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@element-plus/icons-vue"></script>
+
+    <style>
+        body { background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .sidebar-menu { border-right: none !important; background-color: transparent !important; }
+        .sidebar-menu .el-menu-item { border-radius: 8px; margin: 4px 8px; color: #94a3b8; }
+        .sidebar-menu .el-menu-item.is-active { background-color: #4f46e5 !important; color: white !important; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); }
+        .sidebar-menu .el-menu-item:hover:not(.is-active) { background-color: #1e293b !important; color: white !important; }
+        .custom-table .el-table__header th { background-color: #f8fafc !important; color: #475569; font-weight: 600; }
+        .custom-table .el-table__row { transition: background 0.2s; }
+        .stat-card-1 { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); }
+        .stat-card-2 { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .stat-card-3 { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+        .stat-card-4 { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+        .cursor-pointer:hover { opacity: 0.95; }
+        /* 消息列表悬停效果 */
+        .notification-item { transition: background-color 0.2s; border-radius: 8px; padding: 8px; cursor: pointer; }
+        .notification-item:hover { background-color: #f3f4f6; }
+    </style>
+</head>
+<body>
+    <div id="app"><router-view></router-view></div>
+
+    <script>
+        const { createApp, reactive, ref, computed, onMounted } = Vue;
+        const { createRouter, createWebHashHistory, useRouter, useRoute } = VueRouter;
+        const { createPinia, defineStore } = Pinia;
+        const { ElMessage, ElMessageBox } = ElementPlus;
+
+        // --- API 配置 ---
+        const API_BASE_URL = 'http://localhost:8080/api';
+
+        // HTTP 请求封装
+        const http = {
+            getToken() {
+                return localStorage.getItem('admin_token_pro') || '';
+            },
+            async request(url, options = {}) {
+                const token = this.getToken();
+                const headers = {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                    ...options.headers
+                };
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}${url}`, {
+                        ...options,
+                        headers
+                    });
+
+                    const result = await response.json();
+
+                    if (response.status === 401) {
+                        localStorage.removeItem('admin_token_pro');
+                        localStorage.removeItem('admin_info_pro');
+                        window.location.reload();
+                        throw new Error('登录已过期，请重新登录');
+                    }
+
+                    if (result.code !== 0) {
+                        throw new Error(result.message || '请求失败');
+                    }
+
+                    return result.data;
+                } catch (error) {
+                    if (error.message === 'Failed to fetch') {
+                        throw new Error('网络错误，请检查后端服务是否启动');
+                    }
+                    throw error;
+                }
+            },
+            get(url, params = {}) {
+                const queryString = new URLSearchParams(params).toString();
+                const fullUrl = queryString ? `${url}?${queryString}` : url;
+                return this.request(fullUrl, { method: 'GET' });
+            },
+            post(url, data) {
+                return this.request(url, { method: 'POST', body: JSON.stringify(data) });
+            },
+            put(url, data) {
+                return this.request(url, { method: 'PUT', body: JSON.stringify(data) });
+            },
+            delete(url) {
+                return this.request(url, { method: 'DELETE' });
+            },
+            // 上传文件
+            async uploadFile(url, file) {
+                const token = this.getToken();
+                const formData = new FormData();
+                formData.append('file', file);
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}${url}`, {
+                        method: 'POST',
+                        headers: {
+                            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                        },
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (response.status === 401) {
+                        localStorage.removeItem('admin_token_pro');
+                        localStorage.removeItem('admin_info_pro');
+                        window.location.reload();
+                        throw new Error('登录已过期，请重新登录');
+                    }
+
+                    if (result.code !== 0) {
+                        throw new Error(result.message || '上传失败');
+                    }
+
+                    return result.data;
+                } catch (error) {
+                    if (error.message === 'Failed to fetch') {
+                        throw new Error('网络错误，请检查后端服务是否启动');
+                    }
+                    throw error;
+                }
+            }
+        };
+
+        // --- 后端 API ---
+        const api = {
+            // 登录
+            async login(data) {
+                const result = await http.post('/auth/login', data);
+                // 映射后端返回的用户数据
+                const roleMap = { 'ADMIN': '超级管理员', 'USER': '普通用户' };
+                return {
+                    token: result.token,
+                    user: {
+                        id: result.user.id,
+                        username: result.user.username,
+                        role: roleMap[result.user.role] || result.user.role,
+                        avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'
+                    }
+                };
+            },
+            // 获取统计数据
+            async getStats() {
+                const [booksResult, borrowsResult] = await Promise.all([
+                    http.get('/books', { page: 1, size: 1 }),
+                    http.get('/borrows', { page: 1, size: 1 })
+                ]);
+                return {
+                    totalBooks: booksResult.total || 0,
+                    totalStock: 0, // 需要后端支持
+                    activeBorrows: borrowsResult.total || 0,
+                    totalReviews: 0 // 评论功能暂未实现
+                };
+            },
+            // 获取图书列表
+            async getBooks(params = {}) {
+                const result = await http.get('/books', { page: 1, size: 100, ...params });
+                // 映射字段：后端 -> 前端
+                return (result.list || []).map(book => ({
+                    id: book.id,
+                    title: book.title,
+                    author: book.author,
+                    categoryId: book.categoryId,
+                    categoryName: book.categoryName,
+                    stock: book.availableCount,
+                    totalStock: book.totalCount,
+                    cover: book.coverUrl || 'https://placehold.co/400x600/e2e8f0/475569?text=Cover',
+                    price: book.price,
+                    rating: 9.0,
+                    desc: book.description,
+                    date: book.createdAt ? book.createdAt.split('T')[0] : '',
+                    isbn: book.isbn,
+                    publisher: book.publisher,
+                    location: book.location
+                }));
+            },
+            // 新增图书
+            async addBook(book) {
+                await http.post('/books', {
+                    title: book.title,
+                    author: book.author,
+                    categoryId: book.categoryId,
+                    totalCount: book.stock || 10,
+                    price: book.price,
+                    description: book.desc,
+                    coverUrl: book.cover,
+                    isbn: book.isbn || '',
+                    publisher: book.publisher || '',
+                    location: book.location || ''
+                });
+            },
+            // 更新图书
+            async updateBook(book) {
+                await http.put(`/books/${book.id}`, {
+                    title: book.title,
+                    author: book.author,
+                    categoryId: book.categoryId,
+                    totalCount: book.totalStock || book.stock,
+                    price: book.price,
+                    description: book.desc,
+                    coverUrl: book.cover,
+                    isbn: book.isbn || '',
+                    publisher: book.publisher || '',
+                    location: book.location || ''
+                });
+            },
+            // 删除图书
+            async deleteBook(id) {
+                await http.delete(`/books/${id}`);
+            },
+            // 上传图书封面
+            async uploadCover(file) {
+                return await http.uploadFile('/upload/image', file);
+            },
+            // 获取分类列表
+            async getCategories() {
+                return await http.get('/categories');
+            },
+            // 获取分类树
+            async getCategoryTree() {
+                return await http.get('/categories/tree');
+            },
+            // 获取借阅记录
+            async getBorrows(params = {}) {
+                const result = await http.get('/borrows', { page: 1, size: 100, ...params });
+                // 映射字段
+                return (result.list || []).map(record => ({
+                    id: record.id,
+                    bookId: record.bookId,
+                    bookTitle: record.bookTitle,
+                    userId: record.userId,
+                    username: record.username,
+                    borrowDate: record.borrowDate ? record.borrowDate.split('T')[0] : '',
+                    returnDate: record.returnDate ? record.returnDate.split('T')[0] : null,
+                    dueDate: record.dueDate ? record.dueDate.split('T')[0] : '',
+                    status: record.statusDesc,
+                    overdue: record.overdue
+                }));
+            },
+            // 归还图书
+            async returnBook(id) {
+                await http.post(`/borrows/${id}/return`);
+            },
+            // 获取用户列表（管理员）
+            async getAdmins(params = {}) {
+                const result = await http.get('/users', { page: 1, size: 100, ...params });
+                const roleMap = { 'ADMIN': '超级管理员', 'USER': '普通用户' };
+                return (result.list || []).map(user => ({
+                    id: user.id,
+                    username: user.username,
+                    realName: user.realName,
+                    email: user.email,
+                    phone: user.phone,
+                    role: roleMap[user.role] || user.role,
+                    status: user.status,
+                    avatar: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
+                    createdAt: user.createdAt ? user.createdAt.split('T')[0] : ''
+                }));
+            },
+            // 新增管理员（注册）
+            async addAdmin(admin) {
+                await http.post('/auth/register', {
+                    username: admin.username,
+                    password: admin.password,
+                    realName: admin.realName || admin.username,
+                    email: admin.email || `${admin.username}@library.com`,
+                    phone: admin.phone || ''
+                });
+            },
+            // 删除用户
+            async deleteAdmin(id) {
+                await http.delete(`/users/${id}`);
+            },
+            // 更新用户状态
+            async updateUserStatus(id, status) {
+                await http.put(`/users/${id}/status`, null, { params: { status } });
+            },
+            // 获取当前用户
+            async getCurrentUser() {
+                const user = await http.get('/auth/me');
+                const roleMap = { 'ADMIN': '超级管理员', 'USER': '普通用户' };
+                return {
+                    id: user.id,
+                    username: user.username,
+                    role: roleMap[user.role] || user.role,
+                    avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'
+                };
+            },
+            // 评论相关（暂未实现，返回空）
+            async getReviews() { return []; },
+            async deleteReview(id) { console.log('评论功能暂未实现'); },
+            // 配置相关（本地存储，后端暂无此接口）
+            async getConfig() {
+                return JSON.parse(localStorage.getItem('lib_sys_config_v3')) || {
+                    sysName: '智慧图书 - 云端书城',
+                    announcement: '欢迎来到智慧图书管理系统',
+                    allowRegister: true,
+                    maintenance: false
+                };
+            },
+            async saveConfig(config) {
+                localStorage.setItem('lib_sys_config_v3', JSON.stringify(config));
+            }
+        };
+
+        // --- Store ---
+        const useAdminStore = defineStore('admin', () => {
+            const token = ref(localStorage.getItem('admin_token_pro') || '');
+            const userInfo = ref(JSON.parse(localStorage.getItem('admin_info_pro') || '{}'));
+            
+            const login = (data) => { 
+                token.value = data.token; 
+                userInfo.value = data.user;
+                localStorage.setItem('admin_token_pro', data.token); 
+                localStorage.setItem('admin_info_pro', JSON.stringify(data.user));
+            };
+            const logout = () => { 
+                token.value = ''; 
+                userInfo.value = {};
+                localStorage.removeItem('admin_token_pro'); 
+                localStorage.removeItem('admin_info_pro');
+                window.location.reload(); 
+            };
+            
+            const hasPermission = (allowedRoles) => {
+                if (!allowedRoles || allowedRoles.length === 0) return true;
+                return allowedRoles.includes(userInfo.value.role);
+            };
+
+            return { token, userInfo, login, logout, hasPermission };
+        });
+
+        // --- 页面组件 ---
+
+        // 1. 登录页
+        const Login = {
+            template: `
+                <div class="min-h-screen flex items-center justify-center bg-gray-900 relative overflow-hidden">
+                    <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1507842217121-9e93a5f63a81?auto=format&fit=crop&w=2000&q=80')] bg-cover opacity-20"></div>
+                    <div class="bg-white p-10 rounded-2xl shadow-2xl w-96 relative z-10 animate__animated animate__fadeInUp">
+                        <div class="text-center mb-8">
+                            <div class="w-12 h-12 bg-indigo-600 rounded-lg flex items-center justify-center text-white mx-auto mb-4 shadow-lg">
+                                <el-icon size="24"><Management /></el-icon>
+                            </div>
+                            <h2 class="text-2xl font-bold text-gray-800">后台管理系统</h2>
+                            <p class="text-gray-500 text-sm mt-1">智慧图书 Cloud Admin</p>
+                        </div>
+                        <el-form size="large" @submit.prevent="handleLogin">
+                            <el-form-item>
+                                <el-input v-model="form.username" placeholder="管理员账号" prefix-icon="User" />
+                            </el-form-item>
+                            <el-form-item>
+                                <el-input v-model="form.password" type="password" placeholder="密码" prefix-icon="Lock" show-password />
+                            </el-form-item>
+                            <el-button type="primary" class="w-full !rounded-lg !h-12 !text-lg !font-bold bg-indigo-600 hover:bg-indigo-700 border-none" :loading="loading" @click="handleLogin">
+                                安全登录
+                            </el-button>
+                        </el-form>
+                        <div class="mt-6 text-center text-xs text-gray-400">
+                            默认管理员账号: admin / admin123
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const router = useRouter(); const store = useAdminStore();
+                const form = reactive({ username: '', password: '' });
+                const loading = ref(false);
+                const handleLogin = async () => {
+                    if(!form.username || !form.password) return ElMessage.warning('请输入账号密码');
+                    loading.value = true;
+                    try {
+                        const res = await api.login(form);
+                        store.login(res);
+                        ElMessage.success('登录成功');
+                        router.push('/dashboard');
+                    } catch(e) { ElMessage.error(e.message); } 
+                    finally { loading.value = false; }
+                };
+                return { form, handleLogin, loading };
+            }
+        };
+
+        // 2. 仪表盘
+        const Dashboard = {
+            template: `
+                <div class="p-8">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">工作台概览</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div v-for="(stat, idx) in statsData" :key="idx" 
+                             @click="navigateTo(stat.path)"
+                             class="rounded-2xl p-6 text-white shadow-lg transform hover:-translate-y-1 transition-transform cursor-pointer"
+                             :class="stat.bgClass"
+                        >
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-white/80 text-sm font-medium mb-1">{{stat.label}}</p>
+                                    <h3 class="text-3xl font-bold">{{stat.value}}</h3>
+                                </div>
+                                <div class="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                                    <el-icon size="20"><component :is="stat.icon" /></el-icon>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex items-center text-xs text-white/60">
+                                <span>点击管理</span>
+                                <el-icon class="ml-1"><Right /></el-icon>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="font-bold text-gray-800">最新入库</h3>
+                                <el-button link type="primary" @click="$router.push('/books')">全部图书</el-button>
+                            </div>
+                            <el-table :data="recentBooks" style="width: 100%">
+                                <el-table-column prop="title" label="书名" />
+                                <el-table-column prop="author" label="作者" />
+                                <el-table-column prop="categoryName" label="分类">
+                                    <template #default="{row}">
+                                        <el-tag size="small" effect="plain">{{ getCatName(row.categoryId) }}</el-tag>
+                                    </template>
+                                </el-table-column>
+                                <el-table-column prop="stock" label="库存" width="100" />
+                            </el-table>
+                        </div>
+                        
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                            <h3 class="font-bold text-gray-800 mb-4">系统公告</h3>
+                            <div class="space-y-4">
+                                <div class="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+                                    <h4 class="text-sm font-bold text-blue-800">当前角色：{{ store.userInfo.role }}</h4>
+                                    <p class="text-xs text-blue-600 mt-1">
+                                        <span v-if="store.userInfo.role === '超级管理员'">您拥有系统最高权限。</span>
+                                        <span v-else-if="store.userInfo.role === '图书管理员'">您仅可进行图书与借阅操作。</span>
+                                        <span v-else>您可以管理图书、借阅及社区评论。</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const router = useRouter();
+                const store = useAdminStore();
+                const stats = reactive({ totalBooks: 0, totalStock: 0, activeBorrows: 0, totalReviews: 0 });
+                const recentBooks = ref([]);
+                const categories = { 1:'前沿科技', 2:'经典文学', 3:'经管商业', 4:'历史人文' };
+
+                const statsData = computed(() => {
+                    const cards = [
+                        { label: '馆藏种类', value: stats.totalBooks, icon: 'Collection', bgClass: 'stat-card-1', path: '/books', roles: ['超级管理员', '普通管理员', '图书管理员'] },
+                        { label: '图书总库存', value: stats.totalStock, icon: 'Box', bgClass: 'stat-card-2', path: '/books', roles: ['超级管理员', '普通管理员', '图书管理员'] },
+                        { label: '当前借出', value: stats.activeBorrows, icon: 'Timer', bgClass: 'stat-card-3', path: '/borrows', roles: ['超级管理员', '普通管理员', '图书管理员'] },
+                        { label: '社区评论', value: stats.totalReviews, icon: 'ChatLineSquare', bgClass: 'stat-card-4', path: '/reviews', roles: ['超级管理员', '普通管理员'] },
+                    ];
+                    return cards.filter(c => c.roles.includes(store.userInfo.role));
+                });
+
+                const getCatName = (id) => categories[id] || '其他';
+                const navigateTo = (path) => router.push(path);
+
+                onMounted(async () => {
+                    const s = await api.getStats();
+                    Object.assign(stats, s);
+                    const books = await api.getBooks();
+                    recentBooks.value = books.slice(0, 5);
+                });
+
+                return { statsData, recentBooks, getCatName, navigateTo, store };
+            }
+        };
+
+        // 3. 图书管理
+        const BookManager = {
+            template: `
+                <div class="p-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800">图书资料库</h2>
+                        <el-button type="primary" icon="Plus" size="large" class="!rounded-lg" color="#4f46e5" @click="openDialog('add')">新增图书</el-button>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div class="p-4 border-b border-gray-100 flex gap-4">
+                            <el-input v-model="search" placeholder="搜索书名..." prefix-icon="Search" class="w-64" clearable />
+                            <el-select v-model="filterCat" placeholder="全部分类" clearable>
+                                <el-option v-for="cat in flatCategories" :key="cat.id" :label="cat.name" :value="cat.id" />
+                            </el-select>
+                        </div>
+                        <el-table :data="filteredList" class="custom-table" size="large">
+                            <el-table-column label="封面" width="100">
+                                <template #default="{row}">
+                                    <img :src="row.cover" class="w-12 h-16 object-cover rounded shadow-sm border border-gray-200">
+                                </template>
+                            </el-table-column>
+                            <el-table-column prop="title" label="书名" min-width="150" />
+                            <el-table-column prop="author" label="作者" />
+                            <el-table-column label="分类">
+                                <template #default="{row}"><el-tag>{{ row.categoryName || getCatName(row.categoryId) }}</el-tag></template>
+                            </el-table-column>
+                            <el-table-column prop="price" label="价格">
+                                <template #default="{row}">¥{{ row.price }}</template>
+                            </el-table-column>
+                            <el-table-column label="库存" width="120">
+                                <template #default="{row}">
+                                    <el-tag :type="row.stock > 5 ? 'success' : (row.stock > 0 ? 'warning' : 'danger')">
+                                        {{ row.stock }} 本
+                                    </el-tag>
+                                </template>
+                            </el-table-column>
+                            <el-table-column label="操作" width="200" fixed="right">
+                                <template #default="{row}">
+                                    <el-button link type="primary" @click="openDialog('edit', row)">编辑</el-button>
+                                    <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                    </div>
+
+                    <el-dialog v-model="dialogVisible" :title="dialogType === 'add' ? '入库新书' : '编辑信息'" width="600px" align-center class="!rounded-xl">
+                        <el-form :model="form" label-width="80px" class="mt-4">
+                            <el-form-item label="书名"><el-input v-model="form.title" /></el-form-item>
+                            <el-form-item label="作者"><el-input v-model="form.author" /></el-form-item>
+                            <el-form-item label="分类">
+                                <el-cascader v-model="form.categoryPath" :options="categoryTree" :props="{value:'id',label:'name',children:'children',checkStrictly:true,emitPath:false}" clearable class="w-full" placeholder="选择分类" @change="onCategoryChange" />
+                            </el-form-item>
+                            <el-form-item label="ISBN"><el-input v-model="form.isbn" placeholder="图书ISBN" /></el-form-item>
+                            <el-form-item label="封面">
+                                <div class="flex gap-4 items-start w-full">
+                                    <div class="flex-shrink-0">
+                                        <el-upload
+                                            class="cover-uploader"
+                                            :show-file-list="false"
+                                            :http-request="handleCoverUpload"
+                                            accept="image/*"
+                                        >
+                                            <div v-if="form.cover" class="relative group">
+                                                <img :src="form.cover" class="w-24 h-32 object-cover rounded border border-gray-200" />
+                                                <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded">
+                                                    <el-icon class="text-white text-xl"><Plus /></el-icon>
+                                                </div>
+                                            </div>
+                                            <div v-else class="w-24 h-32 border-2 border-dashed border-gray-300 rounded flex flex-col items-center justify-center text-gray-400 hover:border-indigo-500 hover:text-indigo-500 transition-colors cursor-pointer">
+                                                <el-icon class="text-2xl mb-1"><Plus /></el-icon>
+                                                <span class="text-xs">上传封面</span>
+                                            </div>
+                                        </el-upload>
+                                        <div v-if="uploading" class="text-xs text-indigo-500 mt-1">上传中...</div>
+                                    </div>
+                                    <div class="flex-1">
+                                        <el-input v-model="form.cover" placeholder="或输入封面URL" class="mb-2" clearable />
+                                        <p class="text-xs text-gray-400">支持 JPG、PNG 格式，建议尺寸 400x600</p>
+                                    </div>
+                                </div>
+                            </el-form-item>
+                            <div class="grid grid-cols-2 gap-4">
+                                <el-form-item label="价格"><el-input-number v-model="form.price" :min="0" class="w-full" /></el-form-item>
+                                <el-form-item label="库存"><el-input-number v-model="form.stock" :min="0" class="w-full" /></el-form-item>
+                            </div>
+                            <el-form-item label="简介"><el-input v-model="form.desc" type="textarea" rows="3" /></el-form-item>
+                        </el-form>
+                        <template #footer>
+                            <el-button @click="dialogVisible = false">取消</el-button>
+                            <el-button type="primary" @click="submitForm">保存提交</el-button>
+                        </template>
+                    </el-dialog>
+                </div>
+            `,
+            setup() {
+                const list = ref([]);
+                const search = ref('');
+                const filterCat = ref(null);
+                const dialogVisible = ref(false);
+                const dialogType = ref('add');
+                const form = reactive({ id: null, title: '', author: '', categoryId: null, categoryPath: null, stock: 10, price: 50, cover: '', desc: '', isbn: '' });
+                const categoryTree = ref([]);
+                const flatCategories = ref([]);
+                const uploading = ref(false);
+
+                const load = async () => {
+                    try {
+                        list.value = await api.getBooks();
+                    } catch(e) {
+                        ElMessage.error(e.message);
+                    }
+                };
+
+                const loadCategories = async () => {
+                    try {
+                        const tree = await api.getCategoryTree();
+                        categoryTree.value = tree;
+                        // 展平分类树用于筛选
+                        const flatten = (cats, result = []) => {
+                            cats.forEach(cat => {
+                                result.push({ id: cat.id, name: cat.name });
+                                if (cat.children && cat.children.length) flatten(cat.children, result);
+                            });
+                            return result;
+                        };
+                        flatCategories.value = flatten(tree);
+                    } catch(e) {
+                        console.error('加载分类失败', e);
+                    }
+                };
+
+                const getCatName = (id) => {
+                    const cat = flatCategories.value.find(c => c.id === id);
+                    return cat ? cat.name : '其他';
+                };
+
+                const filteredList = computed(() => {
+                    return list.value.filter(item => {
+                        const matchName = item.title.includes(search.value) || item.author.includes(search.value);
+                        const matchCat = filterCat.value ? item.categoryId === filterCat.value : true;
+                        return matchName && matchCat;
+                    });
+                });
+
+                const openDialog = (type, row) => {
+                    dialogType.value = type;
+                    dialogVisible.value = true;
+                    if(type === 'edit') {
+                        Object.assign(form, row);
+                        form.categoryPath = row.categoryId;
+                    } else {
+                        Object.assign(form, { id: null, title: '', author: '', categoryId: null, categoryPath: null, stock: 10, price: 50, cover: '', desc: '', isbn: '' });
+                    }
+                };
+
+                const onCategoryChange = (val) => {
+                    form.categoryId = val;
+                };
+
+                const handleCoverUpload = async (options) => {
+                    const file = options.file;
+                    // 验证文件类型
+                    if (!file.type.startsWith('image/')) {
+                        ElMessage.error('请上传图片文件');
+                        return;
+                    }
+                    // 验证文件大小（最大5MB）
+                    if (file.size > 5 * 1024 * 1024) {
+                        ElMessage.error('图片大小不能超过5MB');
+                        return;
+                    }
+                    uploading.value = true;
+                    try {
+                        const result = await api.uploadCover(file);
+                        form.cover = result.url || result;
+                        ElMessage.success('封面上传成功');
+                    } catch (e) {
+                        ElMessage.error(e.message || '上传失败');
+                    } finally {
+                        uploading.value = false;
+                    }
+                };
+
+                const submitForm = async () => {
+                    if(!form.title || !form.author) return ElMessage.warning('请填写必要信息');
+                    try {
+                        if(dialogType.value === 'add') await api.addBook({...form});
+                        else await api.updateBook({...form});
+                        ElMessage.success('操作成功');
+                        dialogVisible.value = false;
+                        load();
+                    } catch(e) {
+                        ElMessage.error(e.message);
+                    }
+                };
+
+                const handleDelete = async (row) => {
+                    try {
+                        await ElMessageBox.confirm(`确认删除《${row.title}》吗？`, '警告', { type: 'warning' });
+                        await api.deleteBook(row.id);
+                        ElMessage.success('已删除');
+                        load();
+                    } catch(e) {
+                        if(e !== 'cancel') ElMessage.error(e.message);
+                    }
+                };
+
+                onMounted(() => {
+                    load();
+                    loadCategories();
+                });
+                return { list, filteredList, search, filterCat, categoryTree, flatCategories, dialogVisible, dialogType, form, openDialog, submitForm, handleDelete, getCatName, onCategoryChange, uploading, handleCoverUpload };
+            }
+        };
+
+        // 4. 借阅管理
+        const BorrowManager = {
+            template: `
+                <div class="p-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800">借阅记录管理</h2>
+                        <el-button type="success" @click="handleExport" :loading="exporting">
+                            <el-icon class="mr-1"><Download /></el-icon>导出 Excel
+                        </el-button>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <el-table :data="list" class="custom-table" size="large">
+                            <el-table-column prop="id" label="订单号" width="140" />
+                            <el-table-column prop="bookTitle" label="借阅图书" min-width="150" />
+                            <el-table-column prop="userId" label="用户ID" width="100" />
+                            <el-table-column prop="borrowDate" label="借出日期" width="120" />
+                            <el-table-column prop="returnDate" label="归还日期" width="120">
+                                <template #default="{row}">{{ row.returnDate || '-' }}</template>
+                            </el-table-column>
+                            <el-table-column prop="status" label="状态" width="100">
+                                <template #default="{row}">
+                                    <el-tag :type="row.status === '借阅中' ? 'warning' : 'success'" effect="dark">{{ row.status }}</el-tag>
+                                </template>
+                            </el-table-column>
+                            <el-table-column label="操作" width="120" fixed="right">
+                                <template #default="{row}">
+                                    <el-button v-if="row.status === '借阅中'" type="primary" size="small" @click="handleReturn(row)">强制归还</el-button>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                        <div v-if="list.length === 0" class="p-10 text-center text-gray-400">暂无借阅记录</div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const list = ref([]);
+                const exporting = ref(false);
+                const load = async () => list.value = await api.getBorrows();
+                const handleReturn = async (row) => {
+                    try {
+                        await ElMessageBox.confirm(`确认强制归还订单 ${row.id} 吗？库存将自动恢复。`, '提示');
+                        await api.returnBook(row.id);
+                        ElMessage.success('操作成功');
+                        load();
+                    } catch {}
+                };
+                const handleExport = async () => {
+                    try {
+                        exporting.value = true;
+                        const token = localStorage.getItem('admin_token_pro');
+                        const response = await fetch(`${API_BASE_URL}/borrows/export`, {
+                            method: 'GET',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (!response.ok) throw new Error('导出失败');
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        const contentDisposition = response.headers.get('Content-Disposition');
+                        let filename = '借阅记录.xlsx';
+                        if (contentDisposition) {
+                            const match = contentDisposition.match(/filename=(.+)/);
+                            if (match) filename = decodeURIComponent(match[1]);
+                        }
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+                        ElMessage.success('导出成功');
+                    } catch (e) {
+                        ElMessage.error('导出失败: ' + e.message);
+                    } finally {
+                        exporting.value = false;
+                    }
+                };
+                onMounted(load);
+                return { list, handleReturn, handleExport, exporting };
+            }
+        };
+
+        // 5. 评论管理
+        const ReviewManager = {
+            template: `
+                <div class="p-8">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">社区评论管理</h2>
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <el-table :data="list" class="custom-table" size="large">
+                            <el-table-column prop="username" label="用户" width="120">
+                                <template #default="{row}">
+                                    <div class="flex items-center gap-2">
+                                        <el-avatar :size="24" :src="row.avatar"></el-avatar>
+                                        <span class="truncate">{{row.username}}</span>
+                                    </div>
+                                </template>
+                            </el-table-column>
+                            <el-table-column prop="bookTitle" label="图书" width="180" />
+                            <el-table-column prop="content" label="评论内容" min-width="300" show-overflow-tooltip />
+                            <el-table-column prop="rating" label="评分" width="100">
+                                <template #default="{row}">{{ row.rating }} ★</template>
+                            </el-table-column>
+                            <el-table-column prop="date" label="时间" width="120" />
+                            <el-table-column label="操作" width="100" fixed="right">
+                                <template #default="{row}">
+                                    <el-button type="danger" size="small" icon="Delete" circle @click="handleDelete(row)"></el-button>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                        <div v-if="list.length === 0" class="p-10 text-center text-gray-400">暂无评论数据</div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const list = ref([]);
+                const load = async () => list.value = await api.getReviews();
+                const handleDelete = async (row) => {
+                    try {
+                        await ElMessageBox.confirm('确定删除这条评论吗？', '提示', { type: 'warning' });
+                        await api.deleteReview(row.id);
+                        ElMessage.success('已删除');
+                        load();
+                    } catch {}
+                };
+                onMounted(load);
+                return { list, handleDelete };
+            }
+        };
+
+        // 6. 管理员管理
+        const AdminManager = {
+            template: `
+                <div class="p-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800">系统人员管理</h2>
+                        <el-button type="primary" icon="Plus" size="large" class="!rounded-lg" color="#4f46e5" @click="dialogVisible = true">新增管理员</el-button>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <el-table :data="list" class="custom-table" size="large">
+                            <el-table-column label="管理员" width="200">
+                                <template #default="{row}">
+                                    <div class="flex items-center gap-3">
+                                        <el-avatar :src="row.avatar" />
+                                        <div class="font-bold">{{ row.username }}</div>
+                                    </div>
+                                </template>
+                            </el-table-column>
+                            <el-table-column prop="role" label="角色">
+                                <template #default="{row}">
+                                    <el-tag :type="row.role === '超级管理员' ? 'danger' : 'info'" effect="light">{{ row.role }}</el-tag>
+                                </template>
+                            </el-table-column>
+                            <el-table-column prop="createdAt" label="创建时间" />
+                            <el-table-column label="状态">
+                                <template #default="{row}">
+                                    <el-tag type="success" effect="dark" v-if="row.status === 1">正常</el-tag>
+                                    <el-tag type="danger" effect="dark" v-else>停用</el-tag>
+                                </template>
+                            </el-table-column>
+                            <el-table-column label="操作" width="120" fixed="right">
+                                <template #default="{row}">
+                                    <el-button v-if="row.id !== 1 && row.id !== currentAdminId" type="danger" link @click="handleDelete(row)">删除</el-button>
+                                    <span v-else class="text-gray-300 text-xs">不可操作</span>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                    </div>
+
+                    <el-dialog v-model="dialogVisible" title="新增管理员" width="400px" align-center class="!rounded-xl">
+                        <el-form :model="form" label-position="top">
+                            <el-form-item label="登录账号"><el-input v-model="form.username" /></el-form-item>
+                            <el-form-item label="初始密码"><el-input v-model="form.password" show-password /></el-form-item>
+                            <el-form-item label="角色权限">
+                                <el-select v-model="form.role" class="w-full">
+                                    <el-option label="普通管理员" value="普通管理员" />
+                                    <el-option label="图书管理员" value="图书管理员" />
+                                </el-select>
+                            </el-form-item>
+                        </el-form>
+                        <template #footer>
+                            <el-button @click="dialogVisible = false">取消</el-button>
+                            <el-button type="primary" @click="submitForm">创建账号</el-button>
+                        </template>
+                    </el-dialog>
+                </div>
+            `,
+            setup() {
+                const list = ref([]);
+                const dialogVisible = ref(false);
+                const form = reactive({ username: '', password: '', role: '普通管理员' });
+                const store = useAdminStore();
+                
+                const load = async () => list.value = await api.getAdmins();
+                
+                const submitForm = async () => {
+                    if (!form.username || !form.password) return ElMessage.warning('请填写完整');
+                    try {
+                        await api.addAdmin({ ...form });
+                        ElMessage.success('创建成功');
+                        dialogVisible.value = false;
+                        form.username = ''; form.password = ''; 
+                        load();
+                    } catch (e) { ElMessage.error(e.message); }
+                };
+
+                const handleDelete = async (row) => {
+                    try {
+                        await ElMessageBox.confirm(`确定删除管理员 ${row.username} 吗？`, '警告', { type: 'warning' });
+                        await api.deleteAdmin(row.id);
+                        ElMessage.success('已删除');
+                        load();
+                    } catch (e) { if(e !== 'cancel') ElMessage.error(e.message); }
+                };
+
+                onMounted(load);
+                return { list, dialogVisible, form, currentAdminId: store.userInfo.id, submitForm, handleDelete };
+            }
+        };
+
+        // 7. 布局组件 (Header Updated with Notification Details & Settings Sync)
+        const Layout = {
+            template: `
+                <div class="flex h-screen overflow-hidden">
+                    <!-- Sidebar -->
+                    <div class="w-64 bg-slate-900 text-white flex-shrink-0 flex flex-col transition-all duration-300">
+                        <div class="h-16 flex items-center px-6 border-b border-slate-800">
+                            <div class="w-8 h-8 bg-indigo-500 rounded flex items-center justify-center mr-3 font-bold">A</div>
+                            <span class="font-bold text-lg tracking-wide">Admin Pro</span>
+                        </div>
+                        <el-menu router :default-active="$route.path" class="sidebar-menu flex-1 py-4">
+                            <el-menu-item index="/dashboard"><el-icon><Odometer /></el-icon><span>控制台</span></el-menu-item>
+                            
+                            <div class="px-6 text-xs font-bold text-slate-500 mt-4 mb-2 uppercase">业务管理</div>
+                            <el-menu-item index="/books"><el-icon><Collection /></el-icon><span>图书管理</span></el-menu-item>
+                            <el-menu-item index="/borrows"><el-icon><Tickets /></el-icon><span>借阅记录</span></el-menu-item>
+                            <el-menu-item v-if="store.hasPermission(['超级管理员', '普通管理员'])" index="/reviews"><el-icon><ChatLineSquare /></el-icon><span>评论管理</span></el-menu-item>
+                            
+                            <div v-if="store.hasPermission(['超级管理员'])" class="px-6 text-xs font-bold text-slate-500 mt-4 mb-2 uppercase">系统设置</div>
+                            <el-menu-item v-if="store.hasPermission(['超级管理员'])" index="/admins"><el-icon><UserFilled /></el-icon><span>人员管理</span></el-menu-item>
+                        </el-menu>
+                        <div class="p-4 border-t border-slate-800">
+                            <div class="flex items-center gap-3">
+                                <el-avatar :size="32" :src="store.userInfo.avatar" class="bg-indigo-600">A</el-avatar>
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-sm font-medium truncate">{{ store.userInfo.username }}</div>
+                                    <div class="text-xs text-slate-400">{{ store.userInfo.role }}</div>
+                                </div>
+                                <button class="text-slate-400 hover:text-white" @click="logout"><el-icon><SwitchButton /></el-icon></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Content -->
+                    <div class="flex-1 flex flex-col min-w-0 bg-gray-50">
+                        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 shadow-sm z-10">
+                            <div class="text-gray-500 text-sm">欢迎回来，今天是 {{ new Date().toLocaleDateString() }}</div>
+                            <div class="flex gap-4">
+                                <!-- Notifications -->
+                                <el-popover placement="bottom" :width="320" trigger="click">
+                                    <template #reference>
+                                        <el-button circle class="relative">
+                                            <el-icon><Bell /></el-icon>
+                                            <span v-if="unreadCount > 0" class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white"></span>
+                                        </el-button>
+                                    </template>
+                                    <div class="p-2">
+                                        <div class="flex justify-between items-center mb-3 border-b pb-2">
+                                            <h3 class="font-bold text-gray-700">消息通知</h3>
+                                            <el-button link type="primary" size="small" @click="markAllRead" :disabled="!unreadCount">一键已读</el-button>
+                                        </div>
+                                        <div v-if="notifications.length === 0" class="text-center text-gray-400 py-4">暂无新消息</div>
+                                        <ul v-else class="space-y-1 max-h-64 overflow-y-auto">
+                                            <li v-for="(n, i) in notifications" :key="i" @click="viewNotification(n)" class="notification-item flex items-start gap-3 text-sm">
+                                                <div :class="{'bg-blue-500': n.type=='info', 'bg-orange-500': n.type=='warning', 'bg-green-500': n.type=='success', 'opacity-50': n.read}" class="w-2 h-2 mt-1.5 rounded-full flex-shrink-0"></div>
+                                                <div class="flex-1" :class="{'opacity-60': n.read}">
+                                                    <div class="text-gray-700 font-medium truncate">{{n.title}}</div>
+                                                    <div class="text-xs text-gray-400 mt-0.5">{{n.time}}</div>
+                                                </div>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </el-popover>
+
+                                <!-- Settings -->
+                                <el-button circle @click="showSettings = true"><el-icon><Setting /></el-icon></el-button>
+                            </div>
+                        </header>
+                        <main class="flex-1 overflow-auto">
+                            <router-view v-slot="{ Component }">
+                                <transition name="el-fade-in-linear" mode="out-in">
+                                    <component :is="Component" />
+                                </transition>
+                            </router-view>
+                        </main>
+                    </div>
+
+                    <!-- Notification Detail Dialog -->
+                    <el-dialog v-model="showNotifyDetail" title="消息详情" width="400px" align-center append-to-body>
+                        <div v-if="selectedNotify">
+                            <div class="flex items-center gap-2 mb-4">
+                                <el-tag size="small" :type="selectedNotify.type">{{ selectedNotify.type.toUpperCase() }}</el-tag>
+                                <span class="text-gray-400 text-xs">{{ selectedNotify.time }}</span>
+                            </div>
+                            <h3 class="font-bold text-lg mb-2">{{ selectedNotify.title }}</h3>
+                            <p class="text-gray-600 leading-relaxed">{{ selectedNotify.content }}</p>
+                        </div>
+                        <template #footer>
+                            <el-button type="primary" @click="showNotifyDetail = false">关闭</el-button>
+                        </template>
+                    </el-dialog>
+
+                    <!-- Settings Dialog -->
+                    <el-dialog v-model="showSettings" title="系统设置" width="500px" align-center append-to-body>
+                        <el-form label-position="top">
+                            <el-form-item label="系统名称">
+                                <el-input v-model="sysConfig.sysName" />
+                            </el-form-item>
+                            <el-form-item label="全站公告">
+                                <el-input v-model="sysConfig.announcement" type="textarea" rows="2" placeholder="请输入滚动公告内容..." />
+                            </el-form-item>
+                            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                                <span>开放用户注册</span>
+                                <el-switch v-model="sysConfig.allowRegister" />
+                            </div>
+                            <div class="flex justify-between items-center py-2">
+                                <span>系统维护模式</span>
+                                <el-switch v-model="sysConfig.maintenance" active-text="开启" inactive-text="关闭" />
+                            </div>
+                        </el-form>
+                        <template #footer>
+                            <el-button @click="showSettings = false">取消</el-button>
+                            <el-button type="primary" @click="handleSaveSettings">保存配置</el-button>
+                        </template>
+                    </el-dialog>
+                </div>
+            `,
+            setup() {
+                const store = useAdminStore();
+                // 模拟详细消息数据
+                const notifications = ref([
+                    { id: 1, title: '新书入库提醒', content: '《Vue.js设计与实现》等 15 本新书已成功入库，请及时前往图书管理页面进行上架操作。', time: '10分钟前', type: 'info', read: false },
+                    { id: 2, title: '库存预警：三体全集', content: '《三体全集》当前仅剩 1 本，借阅需求较高，建议尽快补货。', time: '30分钟前', type: 'warning', read: false },
+                    { id: 3, title: '系统备份完成', content: '每日自动备份已于凌晨 02:00 完成，数据库状态正常。', time: '2小时前', type: 'success', read: false }
+                ]);
+                
+                const showSettings = ref(false);
+                const showNotifyDetail = ref(false);
+                const selectedNotify = ref(null);
+                
+                const sysConfig = reactive({
+                    sysName: '智慧图书 - 云端书城',
+                    announcement: '',
+                    allowRegister: true,
+                    maintenance: false
+                });
+
+                // Load initial config
+                onMounted(async () => {
+                    const config = await api.getConfig();
+                    if (config) Object.assign(sysConfig, config);
+                });
+
+                const unreadCount = computed(() => notifications.value.filter(n => !n.read).length);
+
+                const viewNotification = (n) => {
+                    selectedNotify.value = n;
+                    n.read = true; // Mark as read
+                    showNotifyDetail.value = true;
+                };
+
+                const markAllRead = () => {
+                    notifications.value.forEach(n => n.read = true);
+                    ElMessage.success('全部已读');
+                };
+
+                const handleSaveSettings = async () => {
+                    await api.saveConfig({...sysConfig});
+                    ElMessage.success('系统配置已更新并同步');
+                    showSettings.value = false;
+                };
+
+                return { 
+                    store, logout: store.logout, 
+                    notifications, unreadCount, viewNotification, markAllRead, showNotifyDetail, selectedNotify,
+                    showSettings, sysConfig, handleSaveSettings 
+                };
+            }
+        };
+
+        // --- 路由配置 ---
+        const routes = [
+            { path: '/login', component: Login },
+            { 
+                path: '/', 
+                component: Layout, 
+                redirect: '/dashboard',
+                children: [
+                    { path: 'dashboard', component: Dashboard },
+                    { path: 'books', component: BookManager },
+                    { path: 'borrows', component: BorrowManager },
+                    { 
+                        path: 'reviews', 
+                        component: ReviewManager,
+                        meta: { roles: ['超级管理员', '普通管理员'] }
+                    },
+                    { 
+                        path: 'admins', 
+                        component: AdminManager,
+                        meta: { roles: ['超级管理员'] }
+                    }
+                ]
+            }
+        ];
+
+        const router = createRouter({ history: createWebHashHistory(), routes });
+        
+        // 路由守卫
+        router.beforeEach((to, from, next) => {
+            const store = useAdminStore();
+            if (to.path === '/login') return next();
+            if (!store.token) return next('/login');
+            
+            if (to.meta.roles && !to.meta.roles.includes(store.userInfo.role)) {
+                ElMessage.error('权限不足，无法访问');
+                return next('/dashboard');
+            }
+            next();
+        });
+
+        const app = createApp({ template: `<router-view></router-view>` });
+        for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+            app.component(key, component);
+        }
+        app.use(createPinia());
+        app.use(router);
+        app.use(ElementPlus);
+        app.mount('#app');
+    </script>
+</body>
+</html>

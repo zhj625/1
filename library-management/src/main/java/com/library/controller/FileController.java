@@ -1,0 +1,79 @@
+package com.library.controller;
+
+import com.library.common.Result;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+@Slf4j
+@RestController
+@RequestMapping("/api/files")
+public class FileController {
+
+    @Value("${file.upload-dir:uploads}")
+    private String uploadDir;
+
+    @Value("${file.base-url:http://localhost:8080}")
+    private String baseUrl;
+
+    @PostMapping("/upload")
+    public Result<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file) {
+        if (file.isEmpty()) {
+            return Result.error(400, "请选择要上传的文件");
+        }
+
+        // 验证文件类型
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            return Result.error(400, "只支持上传图片文件");
+        }
+
+        // 验证文件大小 (最大 5MB)
+        if (file.getSize() > 5 * 1024 * 1024) {
+            return Result.error(400, "文件大小不能超过5MB");
+        }
+
+        try {
+            // 创建上传目录
+            Path uploadPath = Paths.get(uploadDir, "covers");
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+
+            // 生成唯一文件名
+            String originalFilename = file.getOriginalFilename();
+            String extension = "";
+            if (originalFilename != null && originalFilename.contains(".")) {
+                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            }
+            String newFilename = UUID.randomUUID().toString() + extension;
+
+            // 保存文件
+            Path filePath = uploadPath.resolve(newFilename);
+            Files.copy(file.getInputStream(), filePath);
+
+            // 返回访问URL
+            String fileUrl = baseUrl + "/uploads/covers/" + newFilename;
+
+            Map<String, String> result = new HashMap<>();
+            result.put("url", fileUrl);
+            result.put("filename", newFilename);
+
+            log.info("File uploaded successfully: {}", fileUrl);
+            return Result.success(result);
+
+        } catch (IOException e) {
+            log.error("File upload failed", e);
+            return Result.error(500, "文件上传失败: " + e.getMessage());
+        }
+    }
+}
