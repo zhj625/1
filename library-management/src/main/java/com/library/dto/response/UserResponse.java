@@ -21,6 +21,7 @@ public class UserResponse {
     private String phone;
     private String role;
     private Integer status;
+    private String statusText;
     private LocalDateTime createdAt;
 
     public static UserResponse fromEntity(User user) {
@@ -32,6 +33,7 @@ public class UserResponse {
                 .phone(user.getPhone())
                 .role(user.getRole().name())
                 .status(user.getStatus())
+                .statusText(user.getStatusText())
                 .createdAt(user.getCreatedAt())
                 .build();
     }

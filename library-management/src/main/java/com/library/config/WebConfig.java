@@ -19,6 +19,10 @@ public class WebConfig implements WebMvcConfigurer {
         // 配置静态资源映射，让上传的文件可以通过URL访问
         Path uploadPath = Paths.get(uploadDir).toAbsolutePath();
         String uploadAbsolutePath = uploadPath.toUri().toString();
+        // 必须以 "/" 结尾，否则在 Windows 上可能无法正确映射
+        if (!uploadAbsolutePath.endsWith("/")) {
+            uploadAbsolutePath += "/";
+        }
 
         registry.addResourceHandler("/uploads/**")
                 .addResourceLocations(uploadAbsolutePath);

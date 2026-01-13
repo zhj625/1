@@ -17,6 +17,12 @@ import java.util.List;
 @Builder
 public class Book extends BaseEntity {
 
+    /**
+     * 乐观锁版本号，用于并发控制
+     */
+    @Version
+    private Long version;
+
     @Column(unique = true, length = 20)
     private String isbn;
 

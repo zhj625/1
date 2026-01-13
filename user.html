@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>智慧图书 - 云端书城 Pro</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus/dist/index.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/vue-demi"></script>
@@ -13,10 +14,23 @@
     <script src="https://unpkg.com/pinia@2/dist/pinia.iife.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/element-plus"></script>
     <script src="https://cdn.jsdelivr.net/npm/@element-plus/icons-vue"></script>
+    <!-- 公共JS模块 -->
+    <script src="./js/common.js"></script>
 
     <style>
-        body { background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; -webkit-font-smoothing: antialiased; }
-        .glass-nav { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.3); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03); }
+        body {
+            background-color: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
+        }
 
         /* 交错入场动画 - FadeInUp */
         @keyframes fadeInUp {
@@ -24,11 +38,13 @@
                 opacity: 0;
                 transform: translateY(30px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
+
         .stagger-item {
             opacity: 0;
             animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -40,22 +56,31 @@
             transform-style: preserve-3d;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
         }
+
         .book-card:hover {
             transform: translateY(-8px) scale(1.02);
             box-shadow: 0 25px 50px -12px rgba(79, 70, 229, 0.2), 0 12px 24px -8px rgba(0, 0, 0, 0.1);
         }
+
         .book-card:active {
             transform: translateY(-4px) scale(0.98);
             transition: all 0.1s ease;
         }
-        .book-card .cover-img { transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
-        .book-card:hover .cover-img { transform: scale(1.08); }
+
+        .book-card .cover-img {
+            transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .book-card:hover .cover-img {
+            transform: scale(1.08);
+        }
 
         /* 评论卡片 - 增强悬停效果 */
         .review-card {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
+
         .review-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.1), 0 8px 16px -8px rgba(0, 0, 0, 0.05);
@@ -65,10 +90,12 @@
         .btn-press {
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
         .btn-press:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 20px -6px rgba(79, 70, 229, 0.4);
         }
+
         .btn-press:active {
             transform: scale(0.95) translateY(0);
             box-shadow: 0 2px 8px -2px rgba(79, 70, 229, 0.3);
@@ -79,6 +106,7 @@
         .cat-btn {
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
         .cat-btn:active {
             transform: scale(0.92);
             transition: all 0.1s ease;
@@ -89,9 +117,11 @@
             transition: all 0.2s ease;
             cursor: pointer;
         }
+
         .clickable:hover {
             transform: translateY(-2px);
         }
+
         .clickable:active {
             transform: scale(0.95);
             transition: all 0.1s ease;
@@ -101,20 +131,44 @@
         .icon-btn {
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
         .icon-btn:hover {
             transform: scale(1.1);
         }
+
         .icon-btn:active {
             transform: scale(0.9);
             transition: all 0.1s ease;
         }
 
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-        .custom-dialog .el-dialog { border-radius: 24px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
-        .custom-dialog .el-dialog__header { display: none; }
-        .custom-dialog .el-dialog__body { padding: 0; overflow: hidden; }
-        .rank-num { font-family: 'Impact', sans-serif; font-style: italic; }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .custom-dialog .el-dialog {
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        .custom-dialog .el-dialog__header {
+            display: none;
+        }
+
+        .custom-dialog .el-dialog__body {
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .rank-num {
+            font-family: 'Impact', sans-serif;
+            font-style: italic;
+        }
 
         /* ========== 弹窗组合式进场动画 ========== */
         /* 左侧封面从左滑入 */
@@ -123,44 +177,57 @@
                 opacity: 0;
                 transform: translateX(-60px);
             }
+
             to {
                 opacity: 1;
                 transform: translateX(0);
             }
         }
+
         /* 右侧信息从右滑入 */
         @keyframes slideInRight {
             from {
                 opacity: 0;
                 transform: translateX(60px);
             }
+
             to {
                 opacity: 1;
                 transform: translateX(0);
             }
         }
+
         /* 从上方落下 */
         @keyframes fadeInDown {
             from {
                 opacity: 0;
                 transform: translateY(-20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
+
         /* 柔和淡入 */
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
+
         /* 从下方升起 */
         @keyframes fadeInUpModal {
             from {
                 opacity: 0;
                 transform: translateY(25px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -171,21 +238,25 @@
             opacity: 0;
             animation: slideInLeft 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
+
         .modal-info-section {
             opacity: 0;
             animation: slideInRight 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             animation-delay: 0.05s;
         }
+
         .modal-title-area {
             opacity: 0;
             animation: fadeInDown 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             animation-delay: 0.15s;
         }
+
         .modal-desc-area {
             opacity: 0;
             animation: fadeIn 0.6s ease-out forwards;
             animation-delay: 0.25s;
         }
+
         .modal-action-area {
             opacity: 0;
             animation: fadeInUpModal 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -196,23 +267,34 @@
         .modal-cover-wrapper {
             overflow: hidden;
         }
+
         .modal-cover-img {
             transition: transform 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
+
         .modal-cover-wrapper:hover .modal-cover-img {
             transform: scale(1.1);
         }
 
         /* 收藏按钮脉冲动画 */
         @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
         }
+
         .fav-btn-pulse:hover {
             animation: pulse 1s ease-in-out infinite;
         }
     </style>
 </head>
+
 <body>
     <div id="app"><router-view></router-view></div>
 
@@ -222,74 +304,12 @@
         const { createPinia, defineStore } = Pinia;
         const { ElMessage, ElMessageBox, ElNotification } = ElementPlus;
 
-        // --- 全局配置 & 工具函数 ---
-        const PLACEHOLDER_COVER = 'https://placehold.co/400x600/e2e8f0/475569?text=No+Cover';
-        const PLACEHOLDER_BANNER = 'https://placehold.co/1600x600/1e293b/ffffff?text=Library+Banner';
-        const PLACEHOLDER_AVATAR = 'https://placehold.co/100x100/4f46e5/ffffff?text=U';
+        // --- 全局配置 & 工具函数 (使用公共模块) ---
+        const { API_BASE_URL, PLACEHOLDER_COVER, PLACEHOLDER_BANNER, PLACEHOLDER_AVATAR,
+            handleImgError, formatTime, createHttpClient } = window.LibraryCommon;
 
-        const handleImgError = (e, type = 'cover') => {
-            const fallback = type === 'banner' ? PLACEHOLDER_BANNER : (type === 'avatar' ? PLACEHOLDER_AVATAR : PLACEHOLDER_COVER);
-            if (e.target.src !== fallback) { e.target.src = fallback; e.target.onerror = null; }
-        };
-
-        // --- API 配置 ---
-        const API_BASE_URL = 'http://localhost:8080/api';
-
-        // HTTP 请求封装
-        const http = {
-            getToken() {
-                return localStorage.getItem('user_token_pro') || '';
-            },
-            async request(url, options = {}) {
-                const token = this.getToken();
-                const headers = {
-                    'Content-Type': 'application/json',
-                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-                    ...options.headers
-                };
-
-                try {
-                    const response = await fetch(`${API_BASE_URL}${url}`, {
-                        ...options,
-                        headers
-                    });
-
-                    const result = await response.json();
-
-                    if (response.status === 401) {
-                        localStorage.removeItem('user_token_pro');
-                        localStorage.removeItem('user_info_pro');
-                        window.location.reload();
-                        throw new Error('登录已过期，请重新登录');
-                    }
-
-                    if (result.code !== 0) {
-                        throw new Error(result.message || '请求失败');
-                    }
-
-                    return result.data;
-                } catch (error) {
-                    if (error.message === 'Failed to fetch') {
-                        throw new Error('网络错误，请检查后端服务是否启动');
-                    }
-                    throw error;
-                }
-            },
-            get(url, params = {}) {
-                const queryString = new URLSearchParams(params).toString();
-                const fullUrl = queryString ? `${url}?${queryString}` : url;
-                return this.request(fullUrl, { method: 'GET' });
-            },
-            post(url, data) {
-                return this.request(url, { method: 'POST', body: JSON.stringify(data) });
-            },
-            put(url, data) {
-                return this.request(url, { method: 'PUT', body: JSON.stringify(data) });
-            },
-            delete(url) {
-                return this.request(url, { method: 'DELETE' });
-            }
-        };
+        // HTTP 请求封装 (使用公共模块)
+        const http = createHttpClient('user_token_pro', 'user_info_pro');
 
         // --- 后端 API ---
         const api = {
@@ -349,6 +369,52 @@
             async getCategories() {
                 return await http.get('/categories');
             },
+            // 获取新书推荐
+            async getNewArrivals(days = 30, limit = 10) {
+                const result = await http.get('/books/new-arrivals', { days, limit });
+                return (result || []).map(book => ({
+                    id: book.id,
+                    title: book.title,
+                    author: book.author,
+                    categoryId: book.categoryId,
+                    categoryName: book.categoryName,
+                    stock: book.availableCount,
+                    cover: book.coverUrl || PLACEHOLDER_COVER,
+                    price: book.price,
+                    rating: 9.0 + Math.random() * 0.9,
+                    desc: book.description,
+                    date: book.createdAt ? book.createdAt.split('T')[0] : ''
+                }));
+            },
+            // 获取热门图书
+            async getPopularBooks(limit = 10) {
+                const result = await http.get('/books/popular', { limit });
+                return (result || []).map(book => ({
+                    id: book.id,
+                    title: book.title,
+                    author: book.author,
+                    categoryId: book.categoryId,
+                    categoryName: book.categoryName,
+                    stock: book.availableCount,
+                    cover: book.coverUrl || PLACEHOLDER_COVER,
+                    price: book.price,
+                    rating: 9.0 + Math.random() * 0.9,
+                    desc: book.description,
+                    date: book.createdAt ? book.createdAt.split('T')[0] : ''
+                }));
+            },
+            // 获取已发布公告列表
+            async getPublishedAnnouncements(page = 1, size = 10) {
+                return await http.get('/announcements/published', { page, size });
+            },
+            // 获取最新公告
+            async getLatestAnnouncements(limit = 5) {
+                return await http.get('/announcements/latest', { limit });
+            },
+            // 获取公告详情
+            async getAnnouncementById(id) {
+                return await http.get(`/announcements/${id}`);
+            },
             // 借书
             async borrowBook(bookId, userId) {
                 await http.post('/borrows', { bookId });
@@ -370,33 +436,91 @@
                     borrowDate: record.borrowDate ? record.borrowDate.split('T')[0] : '',
                     returnDate: record.returnDate ? record.returnDate.split('T')[0] : null,
                     dueDate: record.dueDate ? record.dueDate.split('T')[0] : '',
-                    status: record.statusDesc
+                    status: record.statusDesc,
+                    // 新增续借和罚款信息
+                    renewCount: record.renewCount || 0,
+                    maxRenewCount: 2,
+                    overdueDays: record.overdueDays || 0,
+                    fineAmount: record.fineAmount || 0,
+                    finePaid: record.finePaid || false,
+                    overdue: record.overdue || false
                 }));
             },
-            // 评论相关（暂未实现）
-            async getReviews() {
-                // 返回本地存储的评论或默认评论
-                const stored = localStorage.getItem('lib_reviews_v3');
-                if (stored) return JSON.parse(stored);
-                return [
-                    { id: 1, bookId: 2, userId: 101, username: '逻辑面壁者', avatar: PLACEHOLDER_AVATAR, rating: 5, content: '这就是科幻的巅峰！', date: '2023-12-20', likes: 124, bookTitle: '三体全集' },
-                    { id: 2, bookId: 3, userId: 102, username: '马孔多雨季', avatar: PLACEHOLDER_AVATAR, rating: 5, content: '孤独是人类的宿命。', date: '2023-12-18', likes: 89, bookTitle: '百年孤独' }
-                ];
+            // 续借图书
+            async renewBook(id) {
+                return await http.post(`/borrows/${id}/renew`);
+            },
+            // 缴纳罚款
+            async payFine(id) {
+                return await http.post(`/borrows/${id}/pay-fine`);
+            },
+            // 评论相关 API
+            async getReviews(limit = 6) {
+                // 获取最新评论（首页展示）
+                const result = await http.get('/reviews/latest', { limit });
+                return (result || []).map(r => ({
+                    id: r.id,
+                    bookId: r.bookId,
+                    userId: r.userId,
+                    username: r.username,
+                    avatar: r.avatar || PLACEHOLDER_AVATAR,
+                    rating: r.rating,
+                    content: r.content,
+                    date: r.createdAt ? r.createdAt.split(' ')[0] : '',
+                    likes: r.likes,
+                    bookTitle: r.bookTitle
+                }));
+            },
+            async getBookReviews(bookId, page = 1, size = 10) {
+                const result = await http.get(`/reviews/book/${bookId}`, { page, size });
+                return {
+                    list: (result.list || []).map(r => ({
+                        id: r.id,
+                        bookId: r.bookId,
+                        userId: r.userId,
+                        username: r.username,
+                        avatar: r.avatar || PLACEHOLDER_AVATAR,
+                        rating: r.rating,
+                        content: r.content,
+                        date: r.createdAt ? r.createdAt.split(' ')[0] : '',
+                        likes: r.likes,
+                        bookTitle: r.bookTitle
+                    })),
+                    total: result.total || 0,
+                    avgRating: result.avgRating || 0,
+                    reviewCount: result.reviewCount || 0
+                };
+            },
+            async getMyReviews() {
+                const result = await http.get('/reviews/my');
+                return (result || []).map(r => ({
+                    id: r.id,
+                    bookId: r.bookId,
+                    userId: r.userId,
+                    username: r.username,
+                    avatar: r.avatar || PLACEHOLDER_AVATAR,
+                    rating: r.rating,
+                    content: r.content,
+                    date: r.createdAt ? r.createdAt.split(' ')[0] : '',
+                    likes: r.likes,
+                    bookTitle: r.bookTitle,
+                    bookAuthor: r.bookAuthor,
+                    bookCoverUrl: r.bookCoverUrl
+                }));
             },
             async addReview(review) {
-                const reviews = await this.getReviews();
-                const newReview = { id: Date.now(), likes: 0, date: new Date().toLocaleDateString(), ...review };
-                reviews.unshift(newReview);
-                localStorage.setItem('lib_reviews_v3', JSON.stringify(reviews));
-                return newReview;
+                const result = await http.post('/reviews', {
+                    bookId: review.bookId,
+                    rating: review.rating,
+                    content: review.content
+                });
+                return result;
+            },
+            async deleteReview(id) {
+                return await http.delete(`/reviews/${id}`);
             },
             async likeReview(id) {
-                const reviews = await this.getReviews();
-                const r = reviews.find(x => x.id === id);
-                if (r) {
-                    r.likes++;
-                    localStorage.setItem('lib_reviews_v3', JSON.stringify(reviews));
-                }
+                return await http.post(`/reviews/${id}/like`);
             },
             // 系统配置
             async getConfig() {
@@ -428,8 +552,110 @@
             },
             async checkFavorite(bookId) {
                 return await http.get(`/favorites/check/${bookId}`);
+            },
+            // 通知相关 API
+            async getNotifications(params = { page: 0, size: 20 }) {
+                const result = await http.get('/notifications', params);
+                const typeMap = {
+                    'DUE_REMINDER': { label: '到期提醒', color: 'warning' },
+                    'OVERDUE_NOTICE': { label: '逾期通知', color: 'danger' },
+                    'RETURN_SUCCESS': { label: '归还成功', color: 'success' },
+                    'BORROW_SUCCESS': { label: '借阅成功', color: 'success' },
+                    'FINE_NOTICE': { label: '罚款通知', color: 'danger' },
+                    'SYSTEM': { label: '系统通知', color: 'info' }
+                };
+                return {
+                    list: (result.content || []).map(n => ({
+                        id: n.id,
+                        title: n.title,
+                        content: n.content,
+                        type: typeMap[n.type]?.color || 'info',
+                        typeLabel: typeMap[n.type]?.label || '通知',
+                        read: n.isRead,
+                        borrowRecordId: n.borrowRecordId,
+                        time: n.createdAt ? formatTime(n.createdAt) : ''
+                    })),
+                    total: result.totalElements || 0
+                };
+            },
+            async getUnreadCount() {
+                const result = await http.get('/notifications/unread-count');
+                return result.count || 0;
+            },
+            async markNotificationRead(id) {
+                await http.put(`/notifications/${id}/read`);
+            },
+            async markAllNotificationsRead() {
+                await http.put('/notifications/read-all');
+            },
+            // 修改密码
+            async changePassword(data) {
+                await http.post('/auth/change-password', data);
+            },
+            // 预约相关 API
+            async reserveBook(bookId) {
+                return await http.post(`/reservations/${bookId}`);
+            },
+            async cancelReservation(id) {
+                return await http.delete(`/reservations/${id}`);
+            },
+            async getMyReservations(page = 1, size = 100) {
+                const result = await http.get('/reservations/my', { page, size });
+                return (result.list || []).map(r => ({
+                    id: r.id,
+                    bookId: r.bookId,
+                    bookTitle: r.bookTitle,
+                    bookAuthor: r.bookAuthor,
+                    bookCoverUrl: r.bookCoverUrl || PLACEHOLDER_COVER,
+                    status: r.status,
+                    statusDesc: r.statusDesc,
+                    queuePosition: r.queuePosition,
+                    notifiedAt: r.notifiedAt,
+                    expiresAt: r.expiresAt ? r.expiresAt.split('T')[0] : null,
+                    createdAt: r.createdAt ? r.createdAt.split('T')[0] : ''
+                }));
+            },
+            async getMyActiveReservations() {
+                const result = await http.get('/reservations/my/active');
+                return result || [];
+            },
+            async checkReservation(bookId) {
+                return await http.get(`/reservations/check/${bookId}`);
+            },
+            async getQueueLength(bookId) {
+                const result = await http.get(`/reservations/queue/${bookId}`);
+                return result.queueLength || 0;
+            },
+            // 罚款相关 API
+            async getFineRules() {
+                return await http.get('/config/fine-rules');
+            },
+            async getMyFines(params = {}) {
+                const result = await http.get('/fines/me', params);
+                return {
+                    list: (result.list || []).map(r => ({
+                        id: r.id,
+                        bookTitle: r.bookTitle,
+                        overdueDays: r.overdueDays,
+                        amount: r.amount,
+                        status: r.status,
+                        statusText: r.statusText,
+                        paidAt: r.paidAt,
+                        waivedAt: r.waivedAt,
+                        createdAt: r.createdAt
+                    })),
+                    total: result.total || 0
+                };
+            },
+            async getMyUnpaidAmount() {
+                return await http.get('/fines/me/unpaid-amount');
+            },
+            async payFineRecord(id) {
+                return await http.post(`/fines/${id}/pay`);
             }
         };
+
+        // formatTime 函数已从公共模块导入,无需重复定义
 
         const useUserStore = defineStore('user', () => {
             const token = ref(localStorage.getItem('user_token_pro') || '');
@@ -441,8 +667,8 @@
 
         // --- 组件 ---
         const BookDetailModal = {
-            props: ['visible', 'book', 'isFavorited'],
-            emits: ['update:visible', 'borrow', 'toggleFavorite'],
+            props: ['visible', 'book', 'isFavorited', 'isReserved', 'queueLength'],
+            emits: ['update:visible', 'borrow', 'toggleFavorite', 'reserve'],
             setup() { return { handleImgError }; },
             template: `
                 <el-dialog :model-value="visible" @update:model-value="$emit('update:visible', $event)" width="800px" align-center class="custom-dialog" :show-close="false" append-to-body :destroy-on-close="true">
@@ -501,6 +727,9 @@
                                             <span :class="['w-2 h-2 rounded-full', book.stock>0 ? 'bg-green-500 animate-pulse':'bg-red-500']"></span>
                                             {{book.stock > 0 ? '现货 ' + book.stock + ' 本' : '暂时缺货'}}
                                         </div>
+                                        <div v-if="book.stock <= 0 && queueLength > 0" class="text-xs text-orange-500 mt-1">
+                                            当前 {{ queueLength }} 人预约中
+                                        </div>
                                     </div>
                                     <div class="text-right">
                                         <div class="text-xs text-gray-400 mb-1">售价</div>
@@ -511,9 +740,15 @@
                                     <el-button @click="$emit('toggleFavorite', book)" :type="isFavorited ? 'danger' : 'default'" size="large" class="btn-press !h-14 !rounded-xl !px-6 !text-base">
                                         <el-icon class="mr-1"><Star /></el-icon>{{ isFavorited ? '已收藏' : '收藏' }}
                                     </el-button>
-                                    <el-button type="primary" size="large" class="btn-press flex-1 !h-14 !rounded-xl !text-lg !font-bold shadow-xl shadow-indigo-200" color="#4f46e5" :disabled="book.stock<=0" @click="$emit('borrow', book)">
-                                        <el-icon class="mr-2" v-if="book.stock > 0"><ShoppingCart /></el-icon>
-                                        {{book.stock > 0 ? '立即借阅' : '缺货登记'}}
+                                    <!-- 有库存时显示借阅按钮 -->
+                                    <el-button v-if="book.stock > 0" type="primary" size="large" class="btn-press flex-1 !h-14 !rounded-xl !text-lg !font-bold shadow-xl shadow-indigo-200" color="#4f46e5" @click="$emit('borrow', book)">
+                                        <el-icon class="mr-2"><ShoppingCart /></el-icon>
+                                        立即借阅
+                                    </el-button>
+                                    <!-- 无库存时显示预约按钮 -->
+                                    <el-button v-else type="warning" size="large" class="btn-press flex-1 !h-14 !rounded-xl !text-lg !font-bold shadow-xl shadow-orange-200" :disabled="isReserved" @click="$emit('reserve', book)">
+                                        <el-icon class="mr-2"><Clock /></el-icon>
+                                        {{ isReserved ? '已预约' : '预约此书' }}
                                     </el-button>
                                 </div>
                             </div>
@@ -521,6 +756,188 @@
                     </div>
                 </el-dialog>
             `
+        };
+
+        // 我的罚款页面
+        const FinesPage = {
+            template: `
+                <div class="container mx-auto px-4 py-12 min-h-screen">
+                    <h2 class="text-3xl font-bold mb-8 text-gray-800 animate__animated animate__fadeInLeft flex items-center gap-3">
+                        <el-icon class="text-orange-500"><Coin /></el-icon> 我的罚款
+                    </h2>
+
+                    <!-- 统计卡片 -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-white rounded-xl shadow-sm p-4 border-l-4 border-red-500">
+                            <div class="text-2xl font-bold text-red-600">{{ unpaidAmount }}元</div>
+                            <div class="text-gray-500 text-sm">待缴纳金额</div>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-sm p-4 border-l-4 border-green-500">
+                            <div class="text-2xl font-bold text-green-600">{{ paidCount }}</div>
+                            <div class="text-gray-500 text-sm">已缴纳记录</div>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-sm p-4 border-l-4 border-blue-500">
+                            <div class="text-2xl font-bold text-blue-600">{{ totalCount }}</div>
+                            <div class="text-gray-500 text-sm">总记录数</div>
+                        </div>
+                    </div>
+
+                    <!-- 罚款规则说明 -->
+                    <div class="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-2xl p-4 mb-6 border border-orange-100">
+                        <div class="flex items-center gap-2 text-orange-700 font-semibold mb-2">
+                            <el-icon><InfoFilled /></el-icon> 罚款规则
+                        </div>
+                        <div class="text-gray-600 text-sm space-y-1">
+                            <p>每日罚金：<span class="font-semibold text-orange-600">{{ fineRule.dailyAmount || 0.5 }}元/天</span></p>
+                            <p>封顶金额：<span class="font-semibold text-orange-600">{{ fineRule.maxAmount == 0 ? '无封顶' : fineRule.maxAmount + '元' }}</span></p>
+                            <p v-if="fineRule.graceDays > 0">免罚天数：<span class="font-semibold text-green-600">{{ fineRule.graceDays }}天</span></p>
+                        </div>
+                    </div>
+
+                    <!-- 筛选 -->
+                    <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
+                        <div class="flex gap-4 flex-wrap">
+                            <el-select v-model="filters.status" placeholder="状态" clearable style="width: 120px" @change="loadFines">
+                                <el-option label="未缴纳" value="UNPAID" />
+                                <el-option label="已缴纳" value="PAID" />
+                                <el-option label="已免除" value="WAIVED" />
+                            </el-select>
+                            <el-button @click="resetFilters">重置</el-button>
+                        </div>
+                    </div>
+
+                    <!-- 罚款列表 -->
+                    <div class="space-y-4" v-loading="loading">
+                        <div v-for="item in fines" :key="item.id" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-6 hover:shadow-md transition-shadow">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-3 mb-1">
+                                    <h3 class="text-lg font-bold text-gray-800 truncate">{{ item.bookTitle }}</h3>
+                                    <el-tag :type="getStatusType(item.status)" effect="dark" round size="small">{{ item.statusText }}</el-tag>
+                                </div>
+                                <div class="flex flex-wrap gap-4 text-xs text-gray-400">
+                                    <span>逾期天数: <span class="text-orange-500 font-medium">{{ item.overdueDays }}天</span></span>
+                                    <span>产生时间: {{ formatDate(item.createdAt) }}</span>
+                                    <span v-if="item.paidAt">缴费时间: {{ formatDate(item.paidAt) }}</span>
+                                    <span v-if="item.waivedAt">免除时间: {{ formatDate(item.waivedAt) }}</span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-2xl font-bold" :class="item.status === 'UNPAID' ? 'text-red-500' : 'text-gray-400'">
+                                    ¥{{ item.amount }}
+                                </div>
+                                <el-button v-if="item.status === 'UNPAID'" type="warning" round size="small" class="mt-2" @click="payFine(item)">
+                                    立即缴纳
+                                </el-button>
+                            </div>
+                        </div>
+                        <div v-if="fines.length === 0 && !loading" class="text-center py-20">
+                            <img src="https://illustrations.popsy.co/gray/success.svg" class="h-48 mx-auto mb-6 opacity-50">
+                            <p class="text-gray-400">暂无罚款记录，继续保持哦！</p>
+                        </div>
+                    </div>
+
+                    <!-- 分页 -->
+                    <div v-if="total > pageSize" class="flex justify-center mt-6">
+                        <el-pagination
+                            v-model:current-page="page"
+                            v-model:page-size="pageSize"
+                            :total="total"
+                            :page-sizes="[10, 20, 50]"
+                            layout="total, prev, pager, next"
+                            @current-change="loadFines"
+                        />
+                    </div>
+                </div>
+            `,
+            setup() {
+                const loading = ref(false);
+                const fines = ref([]);
+                const page = ref(1);
+                const pageSize = ref(10);
+                const total = ref(0);
+                const unpaidAmount = ref(0);
+                const paidCount = ref(0);
+                const totalCount = ref(0);
+                const fineRule = ref({});
+                const filters = reactive({ status: '' });
+
+                const getStatusType = (status) => {
+                    const map = { 'UNPAID': 'danger', 'PAID': 'success', 'WAIVED': 'warning' };
+                    return map[status] || 'info';
+                };
+
+                const formatDate = (str) => {
+                    if (!str) return '';
+                    return str.replace('T', ' ').substring(0, 19);
+                };
+
+                const loadFines = async () => {
+                    loading.value = true;
+                    try {
+                        const params = {
+                            page: page.value,
+                            size: pageSize.value,
+                            ...(filters.status && { status: filters.status })
+                        };
+                        const result = await api.getMyFines(params);
+                        fines.value = result.list || [];
+                        total.value = result.total || 0;
+
+                        // 统计
+                        paidCount.value = fines.value.filter(f => f.status === 'PAID').length;
+                        totalCount.value = result.total;
+                    } catch (error) {
+                        ElMessage.error(error.message);
+                    } finally {
+                        loading.value = false;
+                    }
+                };
+
+                const loadUnpaidAmount = async () => {
+                    try {
+                        unpaidAmount.value = await api.getMyUnpaidAmount() || 0;
+                    } catch (error) {
+                        console.error('获取未缴金额失败:', error);
+                    }
+                };
+
+                const loadFineRule = async () => {
+                    try {
+                        fineRule.value = await api.getFineRules();
+                    } catch (error) {
+                        console.error('获取罚款规则失败:', error);
+                    }
+                };
+
+                const resetFilters = () => {
+                    filters.status = '';
+                    page.value = 1;
+                    loadFines();
+                };
+
+                const payFine = async (item) => {
+                    try {
+                        await ElMessageBox.confirm(`确认缴纳罚款 ¥${item.amount} 吗？`, '缴费确认', { type: 'warning' });
+                        await api.payFineRecord(item.id);
+                        ElMessage.success('罚款已缴纳');
+                        loadFines();
+                        loadUnpaidAmount();
+                    } catch (e) {
+                        if (e !== 'cancel' && e.message) ElMessage.error(e.message);
+                    }
+                };
+
+                onMounted(() => {
+                    loadFines();
+                    loadUnpaidAmount();
+                    loadFineRule();
+                });
+
+                return {
+                    loading, fines, page, pageSize, total, unpaidAmount, paidCount, totalCount, fineRule, filters,
+                    getStatusType, formatDate, loadFines, resetFilters, payFine
+                };
+            }
         };
 
         const CommunityPage = {
@@ -563,7 +980,7 @@
                                                     <el-icon class="group-hover:scale-125 transition-transform"><sugar /></el-icon>
                                                     <span class="text-sm font-bold">{{ review.likes }} 赞</span>
                                                 </button>
-                                                <button class="icon-btn flex items-center gap-1.5 text-gray-400 hover:text-indigo-500 transition-colors">
+                                                <button @click="replyTo(review)" class="icon-btn flex items-center gap-1.5 text-gray-400 hover:text-indigo-500 transition-colors">
                                                     <el-icon><ChatDotRound /></el-icon>
                                                     <span class="text-sm font-bold">回复</span>
                                                 </button>
@@ -625,7 +1042,7 @@
                 const publishVisible = ref(false);
                 const userStore = useUserStore();
                 const router = useRouter();
-                
+
                 const form = reactive({ bookId: null, rating: 5, content: '' });
                 const topics = [
                     { title: '年度必读书单', count: '2.3w' },
@@ -647,7 +1064,7 @@
                 const submitReview = async () => {
                     const book = bookOptions.value.find(b => b.id === form.bookId);
                     if (!book) return;
-                    
+
                     await api.addReview({
                         bookId: book.id,
                         bookTitle: book.title,
@@ -657,7 +1074,7 @@
                         rating: form.rating,
                         content: form.content
                     });
-                    
+
                     ElMessage.success('发布成功！');
                     publishVisible.value = false;
                     loadData(); // 刷新列表
@@ -668,12 +1085,21 @@
                     review.likes++; // 乐观更新
                 };
 
+                const replyTo = (review) => {
+                    // 找到该评论对应的书籍
+                    const book = bookOptions.value.find(b => b.title === review.bookTitle);
+                    form.bookId = book ? book.id : null;
+                    form.rating = 5;
+                    form.content = `@${review.username} `;
+                    publishVisible.value = true;
+                };
+
                 const goToBook = (title) => {
                     router.push(`/collection?keyword=${title}`);
                 };
 
                 onMounted(loadData);
-                return { reviews, topics, publishVisible, form, bookOptions, openPublish, submitReview, like, goToBook, handleImgError };
+                return { reviews, topics, publishVisible, form, bookOptions, openPublish, submitReview, like, replyTo, goToBook, handleImgError };
             }
         };
 
@@ -717,7 +1143,7 @@
                             </div>
                         </div>
                     </div>
-                    <book-detail-modal v-model:visible="detailVisible" :book="selectedBook" :is-favorited="isFavorited" @borrow="handleBorrow" @toggle-favorite="handleToggleFavorite" />
+                    <book-detail-modal v-model:visible="detailVisible" :book="selectedBook" :is-favorited="isFavorited" :is-reserved="isReserved" :queue-length="queueLength" @borrow="handleBorrow" @toggle-favorite="handleToggleFavorite" @reserve="handleReserve" />
                 </div>
             `,
             setup() {
@@ -729,6 +1155,8 @@
                 const detailVisible = ref(false);
                 const selectedBook = ref(null);
                 const isFavorited = ref(false);
+                const isReserved = ref(false);
+                const queueLength = ref(0);
 
                 const pageTitle = computed(() => {
                     if (route.query.type === 'new') return '新书速递';
@@ -754,9 +1182,18 @@
                     selectedBook.value = b;
                     detailVisible.value = true;
                     try {
-                        isFavorited.value = await api.checkFavorite(b.id);
-                    } catch(e) {
+                        const [favorited, reserved, queue] = await Promise.all([
+                            api.checkFavorite(b.id).catch(() => false),
+                            api.checkReservation(b.id).catch(() => false),
+                            api.getQueueLength(b.id).catch(() => 0)
+                        ]);
+                        isFavorited.value = favorited;
+                        isReserved.value = reserved;
+                        queueLength.value = queue;
+                    } catch (e) {
                         isFavorited.value = false;
+                        isReserved.value = false;
+                        queueLength.value = 0;
                     }
                 };
                 const handleToggleFavorite = async (book) => {
@@ -770,7 +1207,7 @@
                             isFavorited.value = true;
                             ElMessage.success('收藏成功');
                         }
-                    } catch(e) {
+                    } catch (e) {
                         ElMessage.error(e.message);
                     }
                 };
@@ -781,11 +1218,23 @@
                         ElNotification({ title: '借阅成功', type: 'success' });
                         detailVisible.value = false;
                         fetchData();
-                    } catch {}
+                    } catch { }
+                };
+
+                const handleReserve = async (book) => {
+                    try {
+                        await ElMessageBox.confirm(`确定预约《${book.title}》吗？\n图书归还后将通知您，届时请在3天内前往借阅。`, '预约确认', { type: 'info' });
+                        await api.reserveBook(book.id);
+                        isReserved.value = true;
+                        queueLength.value += 1;
+                        ElNotification({ title: '预约成功', message: `您已成功预约《${book.title}》，当前排队位置：第 ${queueLength.value} 位`, type: 'success', duration: 5000 });
+                    } catch (e) {
+                        if (e !== 'cancel' && e.message) ElMessage.error(e.message);
+                    }
                 };
 
                 watch(() => route.query, fetchData, { immediate: true });
-                return { books, loading, pageTitle, pageSub, detailVisible, selectedBook, isFavorited, openDetail, handleBorrow, handleToggleFavorite, handleImgError };
+                return { books, loading, pageTitle, pageSub, detailVisible, selectedBook, isFavorited, isReserved, queueLength, openDetail, handleBorrow, handleToggleFavorite, handleReserve, handleImgError };
             }
         };
 
@@ -825,6 +1274,64 @@
                                 <div>
                                     <h4 class="font-bold text-gray-800 text-lg">{{feat.title}}</h4>
                                     <p class="text-sm text-gray-500">{{feat.sub}}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 公告区域 -->
+                    <div v-if="announcements.length > 0" class="container mx-auto px-4 mb-12">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                <el-icon class="text-orange-500"><Bell /></el-icon> 图书馆公告
+                            </h2>
+                            <el-button link type="primary" size="small" @click="showAllAnnouncements = true">查看更多</el-button>
+                        </div>
+                        <div class="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-2xl p-4 border border-orange-100">
+                            <div class="flex flex-col gap-3">
+                                <div v-for="ann in announcements.slice(0, 3)" :key="ann.id"
+                                    class="bg-white rounded-xl p-4 cursor-pointer hover:shadow-md transition-shadow flex items-start gap-3"
+                                    @click="openAnnouncementDetail(ann)">
+                                    <div :class="['w-8 h-8 rounded-lg flex items-center justify-center shrink-0', getAnnouncementTypeClass(ann.type)]">
+                                        <el-icon size="16"><component :is="getAnnouncementIcon(ann.type)" /></el-icon>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <el-tag v-if="ann.pinned" type="danger" size="small" effect="plain">置顶</el-tag>
+                                            <el-tag :type="getAnnouncementTagType(ann.type)" size="small" effect="plain">{{ ann.typeDesc }}</el-tag>
+                                            <span class="font-semibold text-gray-800 truncate">{{ ann.title }}</span>
+                                        </div>
+                                        <p class="text-sm text-gray-500 truncate">{{ ann.content }}</p>
+                                    </div>
+                                    <span class="text-xs text-gray-400 shrink-0">{{ formatAnnouncementDate(ann.createdAt) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 新书推荐区域 -->
+                    <div v-if="newArrivals.length > 0" class="container mx-auto px-4 mb-12">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                                <el-icon class="text-blue-500"><Timer /></el-icon> 新书上架
+                            </h2>
+                            <el-button link type="primary" size="small" @click="$router.push('/collection?type=new')">查看更多</el-button>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                            <div v-for="(book, index) in newArrivals" :key="book.id"
+                                class="book-card stagger-item bg-white p-3 rounded-2xl cursor-pointer group"
+                                :style="{ animationDelay: (index * 0.05) + 's' }"
+                                @click="openDetail(book)">
+                                <div class="relative rounded-xl overflow-hidden aspect-[2/3] mb-3 shadow-sm bg-gray-100">
+                                    <img :src="book.cover" @error="handleImgError" class="cover-img w-full h-full object-cover">
+                                    <div class="absolute top-2 left-2 bg-blue-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">NEW</div>
+                                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                        <el-button type="primary" round size="small" class="btn-press !font-bold">查看</el-button>
+                                    </div>
+                                </div>
+                                <div class="px-1">
+                                    <h3 class="font-bold text-sm text-gray-800 truncate group-hover:text-indigo-600 transition-colors">{{book.title}}</h3>
+                                    <p class="text-xs text-gray-400 truncate">{{book.author}}</p>
                                 </div>
                             </div>
                         </div>
@@ -935,7 +1442,56 @@
                             </div>
                         </div>
                     </div>
-                    <book-detail-modal v-model:visible="detailVisible" :book="selectedBook" :is-favorited="isFavorited" @borrow="handleBorrow" @toggle-favorite="handleToggleFavorite" />
+                    <book-detail-modal v-model:visible="detailVisible" :book="selectedBook" :is-favorited="isFavorited" :is-reserved="isReserved" :queue-length="queueLength" @borrow="handleBorrow" @toggle-favorite="handleToggleFavorite" @reserve="handleReserve" />
+
+                    <!-- 公告详情弹窗 -->
+                    <el-dialog v-model="announcementDetailVisible" title="公告详情" width="550px" class="announcement-dialog">
+                        <div v-if="currentAnnouncement" class="space-y-4">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <el-tag v-if="currentAnnouncement.pinned" type="danger" size="small">置顶</el-tag>
+                                <el-tag :type="getAnnouncementTagType(currentAnnouncement.type)" size="small">{{ currentAnnouncement.typeDesc }}</el-tag>
+                                <span class="text-xs text-gray-400">{{ formatAnnouncementDate(currentAnnouncement.createdAt) }}</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-800">{{ currentAnnouncement.title }}</h3>
+                            <div class="text-sm text-gray-500">发布者：{{ currentAnnouncement.publisherName }}</div>
+                            <el-divider />
+                            <div class="text-gray-700 whitespace-pre-wrap leading-relaxed max-h-96 overflow-y-auto">{{ currentAnnouncement.content }}</div>
+                        </div>
+                    </el-dialog>
+
+                    <!-- 公告列表弹窗 -->
+                    <el-dialog v-model="showAllAnnouncements" title="全部公告" width="700px" class="announcement-dialog">
+                        <div class="space-y-3 max-h-[500px] overflow-y-auto">
+                            <div v-for="ann in allAnnouncements" :key="ann.id"
+                                class="bg-gray-50 rounded-xl p-4 cursor-pointer hover:bg-gray-100 transition-colors flex items-start gap-3"
+                                @click="openAnnouncementDetail(ann); showAllAnnouncements = false;">
+                                <div :class="['w-10 h-10 rounded-lg flex items-center justify-center shrink-0', getAnnouncementTypeClass(ann.type)]">
+                                    <el-icon size="18"><component :is="getAnnouncementIcon(ann.type)" /></el-icon>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <el-tag v-if="ann.pinned" type="danger" size="small" effect="plain">置顶</el-tag>
+                                        <el-tag :type="getAnnouncementTagType(ann.type)" size="small" effect="plain">{{ ann.typeDesc }}</el-tag>
+                                        <span class="font-semibold text-gray-800">{{ ann.title }}</span>
+                                    </div>
+                                    <p class="text-sm text-gray-500 line-clamp-2">{{ ann.content }}</p>
+                                </div>
+                                <span class="text-xs text-gray-400 shrink-0 whitespace-nowrap">{{ formatAnnouncementDate(ann.createdAt) }}</span>
+                            </div>
+                            <div v-if="allAnnouncements.length === 0" class="text-center text-gray-400 py-8">
+                                暂无公告
+                            </div>
+                        </div>
+                        <div v-if="announcementTotal > 10" class="mt-4 flex justify-center">
+                            <el-pagination
+                                v-model:current-page="announcementPage"
+                                :page-size="10"
+                                :total="announcementTotal"
+                                layout="prev, pager, next"
+                                @current-change="loadAllAnnouncements"
+                            />
+                        </div>
+                    </el-dialog>
                 </div>
             `,
             setup() {
@@ -945,9 +1501,21 @@
                 const detailVisible = ref(false);
                 const selectedBook = ref(null);
                 const isFavorited = ref(false);
+                const isReserved = ref(false);
+                const queueLength = ref(0);
                 const router = useRouter();
                 const userStore = useUserStore();
                 const categories = ref([]);
+                const newArrivals = ref([]);
+
+                // 公告相关数据
+                const announcements = ref([]);
+                const allAnnouncements = ref([]);
+                const announcementPage = ref(1);
+                const announcementTotal = ref(0);
+                const showAllAnnouncements = ref(false);
+                const announcementDetailVisible = ref(false);
+                const currentAnnouncement = ref(null);
 
                 const hotBooks = computed(() => [...books.value].sort((a, b) => b.rating - a.rating).slice(0, 5));
 
@@ -975,20 +1543,98 @@
                             return result;
                         };
                         categories.value = flatten(tree);
-                    } catch(e) {
+                    } catch (e) {
                         console.error('加载分类失败', e);
                         // 使用默认分类
                         categories.value = [
-                            {id:1, name:'文学'}, {id:2, name:'计算机'}, {id:3, name:'历史'}, {id:4, name:'经济'}
+                            { id: 1, name: '文学' }, { id: 2, name: '计算机' }, { id: 3, name: '历史' }, { id: 4, name: '经济' }
                         ];
                     }
                 };
+
+                const loadNewArrivals = async () => {
+                    try {
+                        newArrivals.value = await api.getNewArrivals(30, 6);
+                    } catch (e) {
+                        console.error('加载新书推荐失败', e);
+                        newArrivals.value = [];
+                    }
+                };
+
+                // 加载最新公告（首页展示）
+                const loadAnnouncements = async () => {
+                    try {
+                        announcements.value = await api.getLatestAnnouncements(5);
+                    } catch (e) {
+                        console.error('加载公告失败', e);
+                        announcements.value = [];
+                    }
+                };
+
+                // 加载全部公告（分页）
+                const loadAllAnnouncements = async () => {
+                    try {
+                        const result = await api.getPublishedAnnouncements(announcementPage.value, 10);
+                        allAnnouncements.value = result.list || [];
+                        announcementTotal.value = result.total || 0;
+                    } catch (e) {
+                        console.error('加载全部公告失败', e);
+                        allAnnouncements.value = [];
+                    }
+                };
+
+                // 打开公告详情
+                const openAnnouncementDetail = (ann) => {
+                    currentAnnouncement.value = ann;
+                    announcementDetailVisible.value = true;
+                };
+
+                // 公告类型样式
+                const getAnnouncementTypeClass = (type) => {
+                    const map = {
+                        NORMAL: 'bg-blue-100 text-blue-600',
+                        IMPORTANT: 'bg-red-100 text-red-600',
+                        ACTIVITY: 'bg-green-100 text-green-600',
+                        MAINTENANCE: 'bg-yellow-100 text-yellow-700'
+                    };
+                    return map[type] || 'bg-gray-100 text-gray-600';
+                };
+
+                const getAnnouncementTagType = (type) => {
+                    const map = { NORMAL: 'info', IMPORTANT: 'danger', ACTIVITY: 'success', MAINTENANCE: 'warning' };
+                    return map[type] || 'info';
+                };
+
+                const getAnnouncementIcon = (type) => {
+                    const map = { NORMAL: 'Bell', IMPORTANT: 'Warning', ACTIVITY: 'Present', MAINTENANCE: 'Tools' };
+                    return map[type] || 'Bell';
+                };
+
+                const formatAnnouncementDate = (str) => {
+                    if (!str) return '';
+                    const date = new Date(str);
+                    const now = new Date();
+                    const diff = now - date;
+                    const days = Math.floor(diff / 86400000);
+                    if (days === 0) return '今天';
+                    if (days === 1) return '昨天';
+                    if (days < 7) return `${days}天前`;
+                    return str.split('T')[0];
+                };
+
+                // 监听全部公告弹窗打开
+                watch(showAllAnnouncements, (val) => {
+                    if (val) {
+                        announcementPage.value = 1;
+                        loadAllAnnouncements();
+                    }
+                });
 
                 const fetchData = async () => {
                     loading.value = true;
                     try {
                         books.value = await api.getBooks(query);
-                    } catch(e) {
+                    } catch (e) {
                         ElMessage.error(e.message);
                     } finally {
                         loading.value = false;
@@ -998,10 +1644,20 @@
                 const openDetail = async (b) => {
                     selectedBook.value = b;
                     detailVisible.value = true;
+                    // 并行检查收藏和预约状态
                     try {
-                        isFavorited.value = await api.checkFavorite(b.id);
-                    } catch(e) {
+                        const [favorited, reserved, queue] = await Promise.all([
+                            api.checkFavorite(b.id).catch(() => false),
+                            api.checkReservation(b.id).catch(() => false),
+                            api.getQueueLength(b.id).catch(() => 0)
+                        ]);
+                        isFavorited.value = favorited;
+                        isReserved.value = reserved;
+                        queueLength.value = queue;
+                    } catch (e) {
                         isFavorited.value = false;
+                        isReserved.value = false;
+                        queueLength.value = 0;
                     }
                 };
                 const handleToggleFavorite = async (book) => {
@@ -1015,7 +1671,7 @@
                             isFavorited.value = true;
                             ElMessage.success('收藏成功');
                         }
-                    } catch(e) {
+                    } catch (e) {
                         ElMessage.error(e.message);
                     }
                 };
@@ -1026,19 +1682,44 @@
                         ElNotification({ title: '借阅成功', type: 'success' });
                         detailVisible.value = false;
                         fetchData();
-                    } catch(e) {
+                    } catch (e) {
                         if (e !== 'cancel' && e.message) ElMessage.error(e.message);
                     }
                 };
 
-                const handleBannerClick = (item) => { if(item.link) router.push(item.link); };
-                const handleFeaturedClick = (item) => { if(item.link) router.push(item.link); };
+                const handleReserve = async (book) => {
+                    try {
+                        await ElMessageBox.confirm(`确定预约《${book.title}》吗？\n图书归还后将通知您，届时请在3天内前往借阅。`, '预约确认', { type: 'info' });
+                        await api.reserveBook(book.id);
+                        isReserved.value = true;
+                        queueLength.value += 1;
+                        ElNotification({ title: '预约成功', message: `您已成功预约《${book.title}》，当前排队位置：第 ${queueLength.value} 位`, type: 'success', duration: 5000 });
+                    } catch (e) {
+                        if (e !== 'cancel' && e.message) ElMessage.error(e.message);
+                    }
+                };
+
+                const handleBannerClick = (item) => { if (item.link) router.push(item.link); };
+                const handleFeaturedClick = (item) => { if (item.link) router.push(item.link); };
 
                 onMounted(() => {
                     fetchData();
                     loadCategories();
+                    loadNewArrivals();
+                    loadAnnouncements();
                 });
-                return { books, loading, query, banners, featured, categories, detailVisible, selectedBook, isFavorited, hotBooks, toggleCat, fetchData, openDetail, handleBorrow, handleToggleFavorite, handleBannerClick, handleFeaturedClick, handleImgError };
+                return {
+                    books, loading, query, banners, featured, categories, newArrivals,
+                    detailVisible, selectedBook, isFavorited, isReserved, queueLength, hotBooks,
+                    // 公告相关
+                    announcements, allAnnouncements, announcementPage, announcementTotal,
+                    showAllAnnouncements, announcementDetailVisible, currentAnnouncement,
+                    openAnnouncementDetail, loadAllAnnouncements,
+                    getAnnouncementTypeClass, getAnnouncementTagType, getAnnouncementIcon, formatAnnouncementDate,
+                    // 操作方法
+                    toggleCat, fetchData, openDetail, handleBorrow, handleToggleFavorite,
+                    handleReserve, handleBannerClick, handleFeaturedClick, handleImgError
+                };
             }
         };
 
@@ -1055,14 +1736,49 @@
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-3 mb-1">
                                     <h3 class="text-xl font-bold text-gray-800 truncate">{{item.bookTitle}}</h3>
-                                    <el-tag :type="item.status==='借阅中'?'warning':'success'" effect="dark" round size="small">{{item.status}}</el-tag>
+                                    <el-tag :type="getStatusType(item)" effect="dark" round size="small">{{item.status}}</el-tag>
+                                    <el-tag v-if="item.overdue && item.status === '借阅中'" type="danger" effect="dark" round size="small">已逾期</el-tag>
                                 </div>
-                                <p class="text-gray-500 text-sm mb-3">作者: {{item.author || '未知'}}</p>
-                                <div class="text-xs text-gray-400">借阅日期: {{item.borrowDate}}</div>
+                                <p class="text-gray-500 text-sm mb-2">作者: {{item.author || '未知'}}</p>
+                                <div class="flex flex-wrap gap-4 text-xs text-gray-400">
+                                    <span>借阅日期: {{item.borrowDate}}</span>
+                                    <span>应还日期: {{item.dueDate}}</span>
+                                    <span v-if="item.returnDate">归还日期: {{item.returnDate}}</span>
+                                </div>
+                                <!-- 续借和罚款信息 -->
+                                <div class="flex flex-wrap gap-4 mt-2">
+                                    <span v-if="item.status === '借阅中'" class="text-xs px-2 py-1 rounded-full" :class="item.renewCount >= 2 ? 'bg-gray-100 text-gray-500' : 'bg-blue-50 text-blue-600'">
+                                        已续借 {{item.renewCount}}/2 次
+                                    </span>
+                                    <span v-if="item.fineAmount > 0" class="text-xs px-2 py-1 rounded-full" :class="item.finePaid ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'">
+                                        罚款 ¥{{item.fineAmount.toFixed(2)}} {{ item.finePaid ? '(已缴)' : '(未缴)' }}
+                                    </span>
+                                    <span v-if="item.overdueDays > 0" class="text-xs px-2 py-1 rounded-full bg-orange-50 text-orange-600">
+                                        逾期 {{item.overdueDays}} 天
+                                    </span>
+                                </div>
                             </div>
-                            <div>
-                                <el-button v-if="item.status==='借阅中'" type="primary" round class="btn-press !px-6 shadow-lg shadow-indigo-100" @click="ret(item)">归还图书</el-button>
-                                <div v-else class="text-green-600 font-bold text-sm px-4">已归还</div>
+                            <div class="flex flex-col gap-2">
+                                <!-- 借阅中状态的操作按钮 -->
+                                <template v-if="item.status === '借阅中'">
+                                    <!-- 有未缴罚款时显示缴费按钮 -->
+                                    <el-button v-if="item.fineAmount > 0 && !item.finePaid" type="warning" round class="btn-press !px-6 shadow-lg shadow-orange-100" @click="payFine(item)">
+                                        缴纳罚款 ¥{{item.fineAmount.toFixed(2)}}
+                                    </el-button>
+                                    <!-- 可续借时显示续借按钮 -->
+                                    <el-button v-if="item.renewCount < 2 && !item.overdue" type="success" round class="btn-press !px-6 shadow-lg shadow-green-100" @click="renew(item)">
+                                        续借30天
+                                    </el-button>
+                                    <!-- 归还按钮 -->
+                                    <el-button type="primary" round class="btn-press !px-6 shadow-lg shadow-indigo-100" @click="ret(item)">归还图书</el-button>
+                                </template>
+                                <!-- 已归还状态 -->
+                                <template v-else>
+                                    <div class="text-green-600 font-bold text-sm px-4">已归还</div>
+                                    <el-button v-if="item.fineAmount > 0 && !item.finePaid" type="warning" size="small" round @click="payFine(item)">
+                                        缴纳罚款
+                                    </el-button>
+                                </template>
                             </div>
                         </div>
                         <div v-if="list.length === 0" class="text-center py-20">
@@ -1077,9 +1793,44 @@
                 const list = ref([]);
                 const userStore = useUserStore();
                 const load = async () => list.value = await api.getMyBorrows(userStore.userInfo.id);
-                const ret = async (row) => { await ElMessageBox.confirm(`确认归还《${row.bookTitle}》?`); await api.returnBook(row.id); ElMessage.success('已归还'); load(); };
+
+                const getStatusType = (item) => {
+                    if (item.status === '已归还') return 'success';
+                    if (item.overdue) return 'danger';
+                    return 'warning';
+                };
+
+                const ret = async (row) => {
+                    await ElMessageBox.confirm(`确认归还《${row.bookTitle}》?`);
+                    await api.returnBook(row.id);
+                    ElMessage.success('已归还');
+                    load();
+                };
+
+                const renew = async (row) => {
+                    try {
+                        await ElMessageBox.confirm(`确认续借《${row.bookTitle}》？续借后还书日期将延长30天。`, '续借确认', { type: 'info' });
+                        await api.renewBook(row.id);
+                        ElMessage.success('续借成功！还书日期已延长30天');
+                        load();
+                    } catch (e) {
+                        if (e !== 'cancel' && e.message) ElMessage.error(e.message);
+                    }
+                };
+
+                const payFine = async (row) => {
+                    try {
+                        await ElMessageBox.confirm(`确认缴纳罚款 ¥${row.fineAmount.toFixed(2)} 吗？`, '缴费确认', { type: 'warning' });
+                        await api.payFine(row.id);
+                        ElMessage.success('罚款已缴纳');
+                        load();
+                    } catch (e) {
+                        if (e !== 'cancel' && e.message) ElMessage.error(e.message);
+                    }
+                };
+
                 onMounted(load);
-                return { list, ret, handleImgError };
+                return { list, ret, renew, payFine, getStatusType, handleImgError };
             }
         };
 
@@ -1132,7 +1883,7 @@
                     loading.value = true;
                     try {
                         list.value = await api.getMyFavorites();
-                    } catch(e) {
+                    } catch (e) {
                         ElMessage.error(e.message);
                     } finally {
                         loading.value = false;
@@ -1144,7 +1895,7 @@
                         await api.removeFavorite(item.bookId);
                         ElMessage.success('已取消收藏');
                         load();
-                    } catch(e) {
+                    } catch (e) {
                         if (e !== 'cancel' && e.message) ElMessage.error(e.message);
                     }
                 };
@@ -1240,11 +1991,11 @@
                 onMounted(async () => {
                     try {
                         const c = await api.getConfig();
-                        if(c) {
+                        if (c) {
                             sysName.value = c.sysName;
                             config.value = c;
                         }
-                    } catch(e) {
+                    } catch (e) {
                         console.log('获取配置失败', e);
                     }
                 });
@@ -1259,7 +2010,7 @@
                         store.login(res);
                         ElMessage.success('登录成功');
                         router.push('/store');
-                    } catch(e) {
+                    } catch (e) {
                         ElMessage.error(e.message);
                     } finally {
                         loading.value = false;
@@ -1267,7 +2018,7 @@
                 };
 
                 const handleRegister = () => {
-                    if(config.value && config.value.allowRegister === false) {
+                    if (config.value && config.value.allowRegister === false) {
                         ElMessage.error('抱歉，目前系统暂停开放注册');
                     } else {
                         registerVisible.value = true;
@@ -1281,13 +2032,18 @@
                     registerLoading.value = true;
                     try {
                         await api.register(registerForm);
-                        ElMessage.success('注册成功，请登录');
+                        ElNotification({
+                            title: '注册成功',
+                            message: '您的账号已提交审核，请等待管理员审核通过后即可登录。',
+                            type: 'success',
+                            duration: 6000
+                        });
                         registerVisible.value = false;
                         loginForm.username = registerForm.username;
                         loginForm.password = '';
                         // 清空注册表单
                         Object.assign(registerForm, { username: '', password: '', realName: '', email: '', phone: '' });
-                    } catch(e) {
+                    } catch (e) {
                         ElMessage.error(e.message);
                     } finally {
                         registerLoading.value = false;
@@ -1312,16 +2068,118 @@
                             <nav class="hidden md:flex items-center gap-6">
                                 <router-link to="/store" class="font-bold text-gray-500 hover:text-indigo-600 transition-colors" active-class="text-indigo-600 !font-extrabold">首页</router-link>
                                 <router-link to="/shelf" class="font-bold text-gray-500 hover:text-indigo-600 transition-colors" active-class="text-indigo-600 !font-extrabold">我的书架</router-link>
+                                <router-link to="/fines" class="font-bold text-gray-500 hover:text-orange-500 transition-colors" active-class="text-orange-500 !font-extrabold">我的罚款</router-link>
                                 <router-link to="/favorites" class="font-bold text-gray-500 hover:text-red-500 transition-colors" active-class="text-red-500 !font-extrabold">我的收藏</router-link>
                                 <router-link to="/community" class="font-bold text-gray-500 hover:text-indigo-600 transition-colors" active-class="text-indigo-600 !font-extrabold">社区</router-link>
                             </nav>
                             <div class="w-px h-6 bg-gray-300 hidden md:block"></div>
                             <div class="flex items-center gap-3">
-                                <el-avatar :size="36" :src="userStore.userInfo.avatar" @error="e => handleImgError(e, 'avatar')" class="border-2 border-white shadow-sm cursor-pointer hover:scale-105 transition-transform" />
-                                <button class="text-sm font-bold text-gray-500 hover:text-red-500 transition-colors" @click="userStore.logout">退出</button>
+                                <!-- 通知铃铛 -->
+                                <el-popover placement="bottom" :width="360" trigger="click">
+                                    <template #reference>
+                                        <button class="icon-btn relative w-10 h-10 rounded-full bg-gray-100 hover:bg-indigo-50 flex items-center justify-center text-gray-500 hover:text-indigo-600 transition-all">
+                                            <el-icon size="20"><Bell /></el-icon>
+                                            <span v-if="unreadCount > 0" class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 border-2 border-white">
+                                                {{ unreadCount > 99 ? '99+' : unreadCount }}
+                                            </span>
+                                        </button>
+                                    </template>
+                                    <div class="p-2">
+                                        <div class="flex justify-between items-center mb-3 pb-2 border-b border-gray-100">
+                                            <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                                                <el-icon class="text-indigo-500"><Bell /></el-icon> 消息通知
+                                            </h3>
+                                            <el-button link type="primary" size="small" @click="markAllRead" :disabled="!unreadCount">全部已读</el-button>
+                                        </div>
+                                        <div v-if="notifications.length === 0" class="text-center py-8 text-gray-400">
+                                            <el-icon size="48" class="mb-2 opacity-50"><Bell /></el-icon>
+                                            <p>暂无新消息</p>
+                                        </div>
+                                        <ul v-else class="space-y-1 max-h-80 overflow-y-auto">
+                                            <li v-for="n in notifications" :key="n.id"
+                                                @click="viewNotification(n)"
+                                                :class="['p-3 rounded-xl cursor-pointer transition-all', n.read ? 'bg-gray-50 opacity-70' : 'bg-indigo-50 hover:bg-indigo-100']">
+                                                <div class="flex items-start gap-3">
+                                                    <div :class="['w-2 h-2 mt-2 rounded-full flex-shrink-0',
+                                                        n.type === 'danger' ? 'bg-red-500' :
+                                                        n.type === 'warning' ? 'bg-orange-500' :
+                                                        n.type === 'success' ? 'bg-green-500' : 'bg-blue-500']"></div>
+                                                    <div class="flex-1 min-w-0">
+                                                        <div class="flex items-center gap-2 mb-1">
+                                                            <span class="font-bold text-gray-800 text-sm truncate">{{ n.title }}</span>
+                                                            <el-tag size="small" :type="n.type" effect="plain" round>{{ n.typeLabel }}</el-tag>
+                                                        </div>
+                                                        <p class="text-xs text-gray-500 truncate">{{ n.content }}</p>
+                                                        <p class="text-xs text-gray-400 mt-1">{{ n.time }}</p>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </el-popover>
+
+                                <!-- 用户下拉菜单 -->
+                                <el-dropdown trigger="click" @command="handleUserCommand">
+                                    <div class="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
+                                        <el-avatar :size="36" :src="userStore.userInfo.avatar" @error="e => handleImgError(e, 'avatar')" class="border-2 border-white shadow-sm" />
+                                        <span class="text-sm font-bold text-gray-600 hidden md:inline">{{ userStore.userInfo.username }}</span>
+                                        <el-icon class="text-gray-400"><ArrowDown /></el-icon>
+                                    </div>
+                                    <template #dropdown>
+                                        <el-dropdown-menu>
+                                            <el-dropdown-item command="password">
+                                                <el-icon class="mr-2"><Lock /></el-icon>修改密码
+                                            </el-dropdown-item>
+                                            <el-dropdown-item divided command="logout">
+                                                <el-icon class="mr-2 text-red-500"><SwitchButton /></el-icon>
+                                                <span class="text-red-500">退出登录</span>
+                                            </el-dropdown-item>
+                                        </el-dropdown-menu>
+                                    </template>
+                                </el-dropdown>
                             </div>
                         </div>
                     </header>
+
+                    <!-- 通知详情弹窗 -->
+                    <el-dialog v-model="showNotifyDetail" title="消息详情" width="450px" align-center class="!rounded-2xl" append-to-body>
+                        <div v-if="selectedNotify" class="space-y-4">
+                            <div class="flex items-center gap-3">
+                                <el-tag :type="selectedNotify.type" effect="dark" round>{{ selectedNotify.typeLabel }}</el-tag>
+                                <span class="text-gray-400 text-sm">{{ selectedNotify.time }}</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-800">{{ selectedNotify.title }}</h3>
+                            <div class="bg-gray-50 rounded-xl p-4">
+                                <p class="text-gray-600 leading-relaxed whitespace-pre-wrap">{{ selectedNotify.content }}</p>
+                            </div>
+                            <div v-if="selectedNotify.borrowRecordId" class="pt-2">
+                                <el-button type="primary" round @click="goToShelf">查看借阅记录</el-button>
+                            </div>
+                        </div>
+                        <template #footer>
+                            <el-button type="primary" round @click="showNotifyDetail = false">关闭</el-button>
+                        </template>
+                    </el-dialog>
+
+                    <!-- 修改密码弹窗 -->
+                    <el-dialog v-model="showPasswordDialog" title="修改密码" width="400px" align-center class="!rounded-2xl" append-to-body :close-on-click-modal="false">
+                        <el-form :model="passwordForm" label-position="top" ref="passwordFormRef">
+                            <el-form-item label="当前密码" prop="oldPassword" required>
+                                <el-input v-model="passwordForm.oldPassword" type="password" placeholder="请输入当前密码" show-password prefix-icon="Lock" />
+                            </el-form-item>
+                            <el-form-item label="新密码" prop="newPassword" required>
+                                <el-input v-model="passwordForm.newPassword" type="password" placeholder="请输入新密码（6-20位）" show-password prefix-icon="Key" />
+                            </el-form-item>
+                            <el-form-item label="确认新密码" prop="confirmPassword" required>
+                                <el-input v-model="passwordForm.confirmPassword" type="password" placeholder="请再次输入新密码" show-password prefix-icon="Key" />
+                            </el-form-item>
+                        </el-form>
+                        <template #footer>
+                            <el-button @click="showPasswordDialog = false" round>取消</el-button>
+                            <el-button type="primary" @click="submitPasswordChange" :loading="passwordLoading" round>确认修改</el-button>
+                        </template>
+                    </el-dialog>
+
                     <main class="flex-1">
                         <router-view v-slot="{ Component }">
                             <transition name="el-fade-in-linear" mode="out-in">
@@ -1338,12 +2196,155 @@
                 </div>
             `,
             setup() {
+                const router = useRouter();
                 const sysName = ref('云端书城');
+                const userStore = useUserStore();
+
+                // 通知相关状态
+                const notifications = ref([]);
+                const unreadCount = ref(0);
+                const showNotifyDetail = ref(false);
+                const selectedNotify = ref(null);
+
+                // 修改密码相关状态
+                const showPasswordDialog = ref(false);
+                const passwordLoading = ref(false);
+                const passwordForm = reactive({
+                    oldPassword: '',
+                    newPassword: '',
+                    confirmPassword: ''
+                });
+
+                // 用户下拉菜单命令处理
+                const handleUserCommand = (command) => {
+                    if (command === 'password') {
+                        // 重置表单
+                        passwordForm.oldPassword = '';
+                        passwordForm.newPassword = '';
+                        passwordForm.confirmPassword = '';
+                        showPasswordDialog.value = true;
+                    } else if (command === 'logout') {
+                        userStore.logout();
+                    }
+                };
+
+                // 提交密码修改
+                const submitPasswordChange = async () => {
+                    // 前端验证
+                    if (!passwordForm.oldPassword) {
+                        return ElMessage.warning('请输入当前密码');
+                    }
+                    if (!passwordForm.newPassword) {
+                        return ElMessage.warning('请输入新密码');
+                    }
+                    if (passwordForm.newPassword.length < 6 || passwordForm.newPassword.length > 20) {
+                        return ElMessage.warning('新密码长度必须在6-20位之间');
+                    }
+                    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+                        return ElMessage.warning('两次输入的密码不一致');
+                    }
+                    if (passwordForm.oldPassword === passwordForm.newPassword) {
+                        return ElMessage.warning('新密码不能与当前密码相同');
+                    }
+
+                    passwordLoading.value = true;
+                    try {
+                        await api.changePassword(passwordForm);
+                        ElMessage.success('密码修改成功，请重新登录');
+                        showPasswordDialog.value = false;
+                        // 延迟后退出登录
+                        setTimeout(() => {
+                            userStore.logout();
+                        }, 1500);
+                    } catch (e) {
+                        ElMessage.error(e.message || '密码修改失败');
+                    } finally {
+                        passwordLoading.value = false;
+                    }
+                };
+
+                // 加载通知列表
+                const loadNotifications = async () => {
+                    try {
+                        const result = await api.getNotifications({ page: 0, size: 10 });
+                        notifications.value = result.list;
+                    } catch (e) {
+                        console.error('加载通知失败:', e);
+                    }
+                };
+
+                // 加载未读数量
+                const loadUnreadCount = async () => {
+                    try {
+                        unreadCount.value = await api.getUnreadCount();
+                    } catch (e) {
+                        console.error('获取未读数量失败:', e);
+                    }
+                };
+
+                // 查看通知详情
+                const viewNotification = async (n) => {
+                    selectedNotify.value = n;
+                    showNotifyDetail.value = true;
+                    if (!n.read) {
+                        try {
+                            await api.markNotificationRead(n.id);
+                            n.read = true;
+                            unreadCount.value = Math.max(0, unreadCount.value - 1);
+                        } catch (e) {
+                            console.error('标记已读失败:', e);
+                        }
+                    }
+                };
+
+                // 全部标记已读
+                const markAllRead = async () => {
+                    try {
+                        await api.markAllNotificationsRead();
+                        notifications.value.forEach(n => n.read = true);
+                        unreadCount.value = 0;
+                        ElMessage.success('已全部标记为已读');
+                    } catch (e) {
+                        ElMessage.error('操作失败: ' + e.message);
+                    }
+                };
+
+                // 跳转到书架
+                const goToShelf = () => {
+                    showNotifyDetail.value = false;
+                    router.push('/shelf');
+                };
+
                 onMounted(async () => {
                     const c = await api.getConfig();
-                    if(c) sysName.value = c.sysName;
+                    if (c) sysName.value = c.sysName;
+
+                    // 加载通知
+                    await loadNotifications();
+                    await loadUnreadCount();
+
+                    // 每分钟刷新未读数量
+                    setInterval(loadUnreadCount, 60000);
                 });
-                return { userStore: useUserStore(), sysName, handleImgError };
+
+                return {
+                    userStore,
+                    sysName,
+                    handleImgError,
+                    notifications,
+                    unreadCount,
+                    showNotifyDetail,
+                    selectedNotify,
+                    viewNotification,
+                    markAllRead,
+                    goToShelf,
+                    // 修改密码相关
+                    showPasswordDialog,
+                    passwordForm,
+                    passwordLoading,
+                    handleUserCommand,
+                    submitPasswordChange
+                };
             }
         };
 
@@ -1360,16 +2361,19 @@
         const routes = [
             { path: '/login', component: Login },
             { path: '/maintenance', component: Maintenance },
-            { path: '/', component: UserLayout, redirect: '/store', children: [
-                { path: 'store', component: StoreHome },
-                { path: 'shelf', component: StoreShelf },
-                { path: 'favorites', component: FavoritesPage },
-                { path: 'collection', component: CollectionPage },
-                { path: 'community', component: CommunityPage }
-            ]}
+            {
+                path: '/', component: UserLayout, redirect: '/store', children: [
+                    { path: 'store', component: StoreHome },
+                    { path: 'shelf', component: StoreShelf },
+                    { path: 'fines', component: FinesPage },
+                    { path: 'favorites', component: FavoritesPage },
+                    { path: 'collection', component: CollectionPage },
+                    { path: 'community', component: CommunityPage }
+                ]
+            }
         ];
-        const router = createRouter({history:createWebHashHistory(), routes});
-        
+        const router = createRouter({ history: createWebHashHistory(), routes });
+
         // 全局路由守卫
         router.beforeEach(async (to, from, next) => {
             const config = await api.getConfig();
@@ -1381,14 +2385,15 @@
             }
 
             const s = useUserStore();
-            if(to.path === '/login') return next();
-            if(!s.token) return next('/login');
+            if (to.path === '/login') return next();
+            if (!s.token) return next('/login');
             next();
         });
 
-        const app = createApp({template:`<router-view></router-view>`});
-        for(const [k,v] of Object.entries(ElementPlusIconsVue)) app.component(k,v);
+        const app = createApp({ template: `<router-view></router-view>` });
+        for (const [k, v] of Object.entries(ElementPlusIconsVue)) app.component(k, v);
         app.use(createPinia()).use(router).use(ElementPlus).mount('#app');
     </script>
 </body>
+
 </html>

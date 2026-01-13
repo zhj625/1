@@ -20,4 +20,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u WHERE " +
             "(:keyword IS NULL OR :keyword = '' OR u.username LIKE %:keyword% OR u.realName LIKE %:keyword%)")
     Page<User> findByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
+    /**
+     * 根据状态查询用户
+     */
+    Page<User> findByStatus(Integer status, Pageable pageable);
+
+    /**
+     * 统计待审核用户数量
+     */
+    long countByStatus(Integer status);
 }

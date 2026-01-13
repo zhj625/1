@@ -28,7 +28,16 @@
       "Bash(cmd /c \"taskkill /F /PID 9264 2>nul & echo killed || echo not running\")",
       "Bash(powershell -Command \"cd ''D:\\\\桌面\\\\1\\\\library-management''; mvn spring-boot:run\")",
       "Bash(cmd /c \"taskkill /F /PID 9264\")",
-      "Bash(wmic process where \"ProcessId=9264\" delete)"
+      "Bash(wmic process where \"ProcessId=9264\" delete)",
+      "Bash(cmd /c \"cd /d D:\\\\桌面\\\\1\\\\library-management && mvn compile -q 2>&1\")",
+      "Bash(python:*)",
+      "Bash(cmd /c \"dir D:\\\\桌面\\\\1\\\\library-management\\\\target\\\\classes\\\\com\\\\library\\\\dto\\\\request\\\\BookRequest.class\")",
+      "Bash(cmd /c \"type D:\\\\桌面\\\\1\\\\library-management\\\\src\\\\main\\\\java\\\\com\\\\library\\\\dto\\\\request\\\\BookRequest.java | findstr /n Min\")",
+      "Bash(cmd /c \"taskkill /F /PID 75512\")",
+      "Bash(powershell:*)",
+      "Bash(cd:*)",
+      "Bash(cmd /c \"cd /d D:\\\\桌面\\\\1\\\\library-management && mvn spring-boot:run 2>&1 | findstr /i error\")",
+      "Bash(cmd /c \"cd /d D:\\\\桌面\\\\1\\\\library-management && mvn spring-boot:run -e 2>&1\")"
     ]
   }
 }

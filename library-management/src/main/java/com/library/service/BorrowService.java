@@ -13,6 +13,16 @@ public interface BorrowService {
 
     BorrowRecordResponse returnBook(Long recordId);
 
+    /**
+     * 续借图书（延长归还日期30天，最多续借2次）
+     */
+    BorrowRecordResponse renewBook(Long recordId);
+
+    /**
+     * 缴纳逾期罚款
+     */
+    BorrowRecordResponse payFine(Long recordId);
+
     BorrowRecordResponse getRecordById(Long id);
 
     PageResult<BorrowRecordResponse> getRecords(BorrowQueryRequest request);

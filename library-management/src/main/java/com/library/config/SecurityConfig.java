@@ -70,21 +70,27 @@ public class SecurityConfig {
                 )
                 // 配置请求授权
                 .authorizeHttpRequests(auth -> auth
+                        // Swagger UI 公开访问
+                        .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll()
                         // 公开接口
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/books/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()  // 静态资源公开访问
-                        // 文件上传需要管理员权限
-                        .requestMatchers("/api/files/**").hasRole("ADMIN")
-                        // 管理员接口
-                        .requestMatchers(HttpMethod.POST, "/api/books/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/books/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/books/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/categories/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/categories/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/categories/**").hasRole("ADMIN")
+                        // 文件上传需要管理员或馆员权限
+                        .requestMatchers("/api/files/**").hasAnyRole("ADMIN", "LIBRARIAN")
+                        // 图书管理（管理员和馆员都可以）
+                        .requestMatchers(HttpMethod.POST, "/api/books/**").hasAnyRole("ADMIN", "LIBRARIAN")
+                        .requestMatchers(HttpMethod.PUT, "/api/books/**").hasAnyRole("ADMIN", "LIBRARIAN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/books/**").hasAnyRole("ADMIN", "LIBRARIAN")
+                        // 分类管理（管理员和馆员都可以）
+                        .requestMatchers(HttpMethod.POST, "/api/categories/**").hasAnyRole("ADMIN", "LIBRARIAN")
+                        .requestMatchers(HttpMethod.PUT, "/api/categories/**").hasAnyRole("ADMIN", "LIBRARIAN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/categories/**").hasAnyRole("ADMIN", "LIBRARIAN")
+                        // 用户管理仅限管理员
                         .requestMatchers("/api/users/**").hasRole("ADMIN")
+                        // 操作日志仅限管理员
+                        .requestMatchers("/api/logs/**").hasRole("ADMIN")
                         // 其他需要认证
                         .anyRequest().authenticated()
                 )
