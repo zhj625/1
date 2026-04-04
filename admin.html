@@ -127,16 +127,31 @@
             },
             // 获取统计数据
             async getStats() {
-                const [booksResult, borrowsResult] = await Promise.all([
-                    http.get('/books', { page: 1, size: 1 }),
-                    http.get('/borrows', { page: 1, size: 1 })
-                ]);
-                return {
-                    totalBooks: booksResult.total || 0,
-                    totalStock: 0, // 需要后端支持
-                    activeBorrows: borrowsResult.total || 0,
-                    totalReviews: 0 // 评论功能暂未实现
-                };
+                try {
+                    const dashboard = await http.get('/statistics/dashboard');
+                    return {
+                        totalBooks: dashboard.totalBooks || 0,
+                        totalStock: dashboard.totalStock || 0,
+                        activeBorrows: dashboard.activeBorrows || 0,
+                        totalReviews: dashboard.totalReviews || 0
+                    };
+                } catch (e) {
+                    // 兼容旧逻辑：统计接口不可用时，回退到分页接口，避免首页统计全部丢失
+                    const [booksResult, borrowsResult, reviewsResult] = await Promise.all([
+                        http.get('/books', { page: 1, size: 1000 }),
+                        http.get('/borrows', { page: 1, size: 1 }),
+                        http.get('/reviews/admin', { page: 1, size: 1 }).catch(() => ({ total: 0 }))
+                    ]);
+                    const totalStock = (booksResult.list || []).reduce((sum, book) => {
+                        return sum + (book.totalCount || 0);
+                    }, 0);
+                    return {
+                        totalBooks: booksResult.total || 0,
+                        totalStock,
+                        activeBorrows: borrowsResult.total || 0,
+                        totalReviews: reviewsResult.total || 0
+                    };
+                }
             },
             // 获取图书列表
             async getBooks(params = {}) {
@@ -497,9 +512,6 @@
                                 安全登录
                             </el-button>
                         </el-form>
-                        <div class="mt-6 text-center text-xs text-gray-400">
-                            默认账号: admin / admin123 (管理员) | librarian / admin123 (馆员)
-                        </div>
                     </div>
                 </div>
             `,

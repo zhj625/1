@@ -7,6 +7,7 @@ import com.library.entity.BorrowRecord;
 import com.library.repository.BookRepository;
 import com.library.repository.BorrowRecordRepository;
 import com.library.repository.CategoryRepository;
+import com.library.repository.ReviewRepository;
 import com.library.repository.UserRepository;
 import com.library.service.StatisticsService;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class StatisticsServiceImpl implements StatisticsService {
     private final UserRepository userRepository;
     private final BorrowRecordRepository borrowRecordRepository;
     private final CategoryRepository categoryRepository;
+    private final ReviewRepository reviewRepository;
 
     @Override
     public StatisticsResponse getStatistics() {
@@ -47,6 +49,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         long totalBorrows = borrowRecordRepository.count();
         long activeBorrows = borrowRecordRepository.countByStatus(BorrowRecord.Status.BORROWING);
         long overdueBorrows = borrowRecordRepository.countByStatus(BorrowRecord.Status.OVERDUE);
+        long totalReviews = reviewRepository.count();
 
         // 今日统计
         long todayBorrows = borrowRecordRepository.countByBorrowDateBetween(todayStart, todayEnd);
@@ -73,6 +76,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                 .overdueBorrows(overdueBorrows)
                 .todayBorrows(todayBorrows)
                 .todayReturns(todayReturns)
+                .totalReviews(totalReviews)
                 .borrowTrend(borrowTrend)
                 .categoryStats(categoryStats)
                 .hotBooks(hotBooks)

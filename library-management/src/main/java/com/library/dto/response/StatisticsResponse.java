@@ -23,6 +23,7 @@ public class StatisticsResponse {
     private long overdueBorrows;      // 逾期数量
     private long todayBorrows;        // 今日借阅
     private long todayReturns;        // 今日归还
+    private long totalReviews;        // 评论总数
 
     // 图表数据
     private List<Map<String, Object>> borrowTrend;      // 借阅趋势（近7天/30天）
