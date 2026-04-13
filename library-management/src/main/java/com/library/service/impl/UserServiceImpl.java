@@ -114,18 +114,31 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException(ErrorCode.USERNAME_EXISTS);
         }
 
+        // 解析角色：如果前端传了有效角色就使用，否则默认 USER
+        User.Role role = User.Role.USER;
+        boolean isAdminCreated = false;
+        if (request.getRole() != null && !request.getRole().isBlank()) {
+            try {
+                role = User.Role.valueOf(request.getRole().toUpperCase());
+                isAdminCreated = true; // 管理员创建的用户
+            } catch (IllegalArgumentException e) {
+                // 无效角色值，使用默认 USER
+                log.warn("无效的角色值: {}，使用默认角色 USER", request.getRole());
+            }
+        }
+
         User user = User.builder()
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .realName(request.getRealName())
                 .email(request.getEmail())
                 .phone(request.getPhone())
-                .role(User.Role.USER)
-                .status(User.STATUS_PENDING)  // 新注册用户为待审核状态
+                .role(role)
+                .status(isAdminCreated ? User.STATUS_ENABLED : User.STATUS_PENDING)
                 .build();
 
         user = userRepository.save(user);
-        log.info("用户注册成功，等待审核: username={}", user.getUsername());
+        log.info("用户注册成功: username={}, role={}, status={}", user.getUsername(), user.getRole(), user.getStatusText());
         return UserResponse.fromEntity(user);
     }
 
@@ -182,12 +195,17 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "不能禁用自己的账号");
         }
 
-        // 保护措施2：不能禁用其他管理员（只有超级管理员可以禁用馆员）
-        if (status == 0 && user.getRole() == User.Role.ADMIN) {
-            throw new BusinessException(ErrorCode.NO_PERMISSION, "不能禁用管理员账号");
+        // 保护措施2：系统的初始超级管理员 admin 不能被任何人禁用
+        if (status == 0 && "admin".equals(user.getUsername())) {
+            throw new BusinessException(ErrorCode.NO_PERMISSION, "不能禁用系统初始超级管理员账号");
         }
 
-        // 保护措施3：馆员不能禁用其他馆员
+        // 保护措施3：普通管理员(ADMIN)只能由超级管理员 admin 禁用，不能互相禁用
+        if (status == 0 && user.getRole() == User.Role.ADMIN && !"admin".equals(currentUser.getUsername())) {
+            throw new BusinessException(ErrorCode.NO_PERMISSION, "只有系统初始超级管理员可以禁用其他普通管理员账号");
+        }
+
+        // 保护措施4：馆员不能禁用其他馆员
         if (status == 0 && currentUser.getRole() == User.Role.LIBRARIAN && user.getRole() == User.Role.LIBRARIAN) {
             throw new BusinessException(ErrorCode.NO_PERMISSION, "馆员不能禁用其他馆员账号");
         }
@@ -253,9 +271,19 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void deleteUser(Long id) {
-        if (!userRepository.existsById(id)) {
-            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        User currentUser = getCurrentUserEntity();
+
+        if ("admin".equals(user.getUsername())) {
+            throw new BusinessException(ErrorCode.NO_PERMISSION, "不能删除系统超级管理员账号");
         }
+
+        if (user.getRole() == User.Role.ADMIN && !"admin".equals(currentUser.getUsername())) {
+            throw new BusinessException(ErrorCode.NO_PERMISSION, "只有超级管理员可以删除其他普通管理员账号");
+        }
+
         userRepository.deleteById(id);
     }
 

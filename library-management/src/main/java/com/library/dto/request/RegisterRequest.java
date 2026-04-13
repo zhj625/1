@@ -25,4 +25,7 @@ public class RegisterRequest {
     @Pattern(regexp = "^$|^1[3-9]\\d{9}$", message = "手机号格式不正确")
     @Size(max = 20, message = "手机号不超过20个字符")
     private String phone;
+
+    // 可选：管理员创建用户时指定角色（ADMIN / LIBRARIAN / USER）
+    private String role;
 }

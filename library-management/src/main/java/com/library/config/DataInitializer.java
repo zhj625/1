@@ -141,11 +141,6 @@ public class DataInitializer implements CommandLineRunner {
                 5, "Python入门经典书籍，适合初学者学习Python编程。", "B-01-003",
                 "https://img1.doubanio.com/view/subject/l/public/s29735398.jpg");
 
-        createBook("978-7-111-58408-5", "Java核心技术 卷I", "Cay S. Horstmann", "机械工业出版社",
-                LocalDate.of(2019, 12, 1), computer, new BigDecimal("149.00"),
-                4, "Java领域最畅销的技术书籍之一，全面介绍Java核心技术。", "B-01-004",
-                "https://img2.doubanio.com/view/subject/l/public/s29063065.jpg");
-
         createBook("978-7-115-52340-6", "JavaScript高级程序设计", "Matt Frisbie", "人民邮电出版社",
                 LocalDate.of(2020, 9, 1), computer, new BigDecimal("129.00"),
                 3, "JavaScript领域的经典著作，全面介绍JavaScript语言。", "B-01-005",

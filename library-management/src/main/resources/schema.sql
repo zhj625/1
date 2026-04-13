@@ -135,7 +135,6 @@ INSERT INTO category (name, description, parent_id, sort_order) VALUES
 
 -- 插入示例图书
 INSERT INTO book (isbn, title, author, publisher, publish_date, category_id, price, total_count, available_count, description, location) VALUES
-('978-7-111-12345-1', 'Java核心技术卷I', 'Cay S. Horstmann', '机械工业出版社', '2023-01-01', 8, 149.00, 5, 5, 'Java经典入门书籍', 'A-01-01'),
 ('978-7-111-12345-2', 'Spring实战', 'Craig Walls', '人民邮电出版社', '2022-06-01', 8, 89.00, 3, 3, 'Spring框架权威指南', 'A-01-02'),
 ('978-7-111-12345-3', 'MySQL必知必会', 'Ben Forta', '人民邮电出版社', '2021-03-01', 9, 59.00, 4, 4, 'MySQL入门经典', 'A-02-01'),
 ('978-7-111-12345-4', '深度学习', 'Ian Goodfellow', '人民邮电出版社', '2020-08-01', 10, 168.00, 2, 2, '深度学习领域圣经', 'A-02-02'),
@@ -274,9 +273,8 @@ CREATE TABLE IF NOT EXISTS review (
 
 -- 插入示例评论
 INSERT INTO review (user_id, book_id, rating, content, likes) VALUES
-(3, 1, 5, 'Java核心技术是学习Java的必读经典，内容详实，讲解深入浅出，非常推荐！', 12),
-(3, 5, 5, '红楼梦是中国古典文学的巅峰之作，每次阅读都有新的感悟。', 28),
-(3, 4, 4, '深度学习领域的圣经级著作，数学推导严谨，适合有一定基础的读者。', 15);
+(3, 4, 5, '红楼梦是中国古典文学的巅峰之作，每次阅读都有新的感悟。', 28),
+(3, 3, 4, '深度学习领域的圣经级著作，数学推导严谨，适合有一定基础的读者。', 15);
 
 -- ========================================
 -- 罚款规则表

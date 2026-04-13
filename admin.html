@@ -271,7 +271,8 @@
                     password: admin.password,
                     realName: admin.realName || admin.username,
                     email: admin.email || `${admin.username}@library.com`,
-                    phone: admin.phone || ''
+                    phone: admin.phone || '',
+                    role: admin.role
                 });
             },
             // 删除用户
@@ -1122,14 +1123,14 @@
                                     </el-button>
                                     <!-- 删除按钮 -->
                                     <el-button
-                                        v-if="row.rawRole !== 'ADMIN' && row.id !== currentAdminId"
+                                        v-if="canDelete(row)"
                                         type="danger"
                                         link
                                         @click="handleDelete(row)"
                                     >
                                         删除
                                     </el-button>
-                                    <span v-if="!canToggleStatus(row) && (row.rawRole === 'ADMIN' || row.id === currentAdminId)" class="text-gray-300 text-xs">不可操作</span>
+                                    <span v-if="!canToggleStatus(row) && !canDelete(row)" class="text-gray-300 text-xs">不可操作</span>
                                 </template>
                             </el-table-column>
                         </el-table>
@@ -1141,8 +1142,8 @@
                             <el-form-item label="初始密码"><el-input v-model="form.password" show-password /></el-form-item>
                             <el-form-item label="角色权限">
                                 <el-select v-model="form.role" class="w-full">
-                                    <el-option label="普通管理员" value="普通管理员" />
-                                    <el-option label="图书管理员" value="图书管理员" />
+                                    <el-option label="普通管理员" value="ADMIN" />
+                                    <el-option label="图书管理员" value="LIBRARIAN" />
                                 </el-select>
                             </el-form-item>
                         </el-form>
@@ -1156,17 +1157,30 @@
             setup() {
                 const list = ref([]);
                 const dialogVisible = ref(false);
-                const form = reactive({ username: '', password: '', role: '普通管理员' });
+                const form = reactive({ username: '', password: '', role: 'ADMIN' });
                 const store = useAdminStore();
 
                 const load = async () => list.value = await api.getAdmins();
 
-                // 判断是否可以切换状态
+                                // 判断是否可以切换状态
                 const canToggleStatus = (row) => {
                     // 不能操作自己
                     if (row.id === store.userInfo.id) return false;
-                    // 不能操作管理员账号
-                    if (row.rawRole === 'ADMIN') return false;
+                    // 不能操作初始超级管理员
+                    if (row.username === 'admin') return false;
+                    // 只有初始超级管理员可以操作其他普通管理员
+                    if (row.rawRole === 'ADMIN' && store.userInfo.username !== 'admin') return false;
+                    return true;
+                };
+
+                // 判断是否可以删除
+                const canDelete = (row) => {
+                    // 不能删除自己
+                    if (row.id === store.userInfo.id) return false;
+                    // 不能删除初始超级管理员
+                    if (row.username === 'admin') return false;
+                    // 只有初始超级管理员可以删除其他普通管理员
+                    if (row.rawRole === 'ADMIN' && store.userInfo.username !== 'admin') return false;
                     return true;
                 };
 
@@ -1210,7 +1224,7 @@
                 };
 
                 onMounted(load);
-                return { list, dialogVisible, form, currentAdminId: store.userInfo.id, submitForm, handleDelete, canToggleStatus, handleToggleStatus };
+                return { list, dialogVisible, form, currentAdminId: store.userInfo.id, submitForm, handleDelete, canToggleStatus, canDelete, handleToggleStatus };
             }
         };
 
