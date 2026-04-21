@@ -11,9 +11,9 @@
     const API_BASE_URL = 'http://localhost:8080/api';
 
     // 占位图片
-    const PLACEHOLDER_COVER = 'https://placehold.co/400x600/e2e8f0/475569?text=No+Cover';
-    const PLACEHOLDER_BANNER = 'https://placehold.co/1600x600/1e293b/ffffff?text=Library+Banner';
-    const PLACEHOLDER_AVATAR = 'https://placehold.co/100x100/4f46e5/ffffff?text=U';
+    const PLACEHOLDER_COVER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='600'%3E%3Crect width='400' height='600' fill='%23e2e8f0' rx='8'/%3E%3Ctext x='200' y='280' text-anchor='middle' fill='%23475569' font-size='36' font-family='sans-serif'%3E📚%3C/text%3E%3Ctext x='200' y='330' text-anchor='middle' fill='%23475569' font-size='18' font-family='sans-serif'%3ENo Cover%3C/text%3E%3C/svg%3E";
+    const PLACEHOLDER_BANNER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='600'%3E%3Crect width='1600' height='600' fill='%231e293b'/%3E%3Ctext x='800' y='310' text-anchor='middle' fill='white' font-size='48' font-family='sans-serif'%3ELibrary Banner%3C/text%3E%3C/svg%3E";
+    const PLACEHOLDER_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%234f46e5' rx='50'/%3E%3Ctext x='50' y='58' text-anchor='middle' fill='white' font-size='40' font-family='sans-serif'%3EU%3C/text%3E%3C/svg%3E";
 
     // ==================== 工具函数 ====================
 

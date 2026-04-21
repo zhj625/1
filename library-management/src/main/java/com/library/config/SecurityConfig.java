@@ -77,6 +77,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/books/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()  // 静态资源公开访问
+                        .requestMatchers("/images/**").permitAll()  // 本地图片公开访问
+                        .requestMatchers("/api/covers/**").permitAll()  // 封面生成接口公开访问
                         // 文件上传需要管理员或馆员权限
                         .requestMatchers("/api/files/**").hasAnyRole("ADMIN", "LIBRARIAN")
                         // 图书管理（管理员和馆员都可以）

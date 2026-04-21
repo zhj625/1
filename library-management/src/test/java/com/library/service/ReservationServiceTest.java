@@ -7,6 +7,7 @@ import com.library.entity.Reservation;
 import com.library.entity.User;
 import com.library.exception.BusinessException;
 import com.library.repository.BookRepository;
+import com.library.repository.BorrowRecordRepository;
 import com.library.repository.ReservationRepository;
 import com.library.service.impl.ReservationServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +42,9 @@ class ReservationServiceTest {
 
     @Mock
     private BookRepository bookRepository;
+
+    @Mock
+    private BorrowRecordRepository borrowRecordRepository;
 
     @Mock
     private UserService userService;
@@ -117,6 +121,23 @@ class ReservationServiceTest {
                 () -> reservationService.reserveBook(999L));
 
         assertEquals(ErrorCode.BOOK_NOT_FOUND.getCode(), exception.getCode());
+    }
+
+    @Test
+    @DisplayName("棰勭害澶辫触 - 宸插€熼槄鍚屾湰涔?")
+    void reserveBook_AlreadyBorrowed() {
+        // Given
+        when(userService.getCurrentUserEntity()).thenReturn(testUser);
+        when(bookRepository.findById(1L)).thenReturn(Optional.of(testBook));
+        when(borrowRecordRepository.findActiveBorrow(testUser.getId(), 1L))
+                .thenReturn(Optional.of(mock(com.library.entity.BorrowRecord.class)));
+
+        // When & Then
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> reservationService.reserveBook(1L));
+
+        assertEquals(ErrorCode.ALREADY_BORROWED.getCode(), exception.getCode());
+        verify(reservationRepository, never()).save(any(Reservation.class));
     }
 
     @Test

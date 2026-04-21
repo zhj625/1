@@ -9,6 +9,7 @@ import com.library.entity.Reservation;
 import com.library.entity.User;
 import com.library.exception.BusinessException;
 import com.library.repository.BookRepository;
+import com.library.repository.BorrowRecordRepository;
 import com.library.repository.ReservationRepository;
 import com.library.service.NotificationService;
 import com.library.service.ReservationService;
@@ -33,6 +34,7 @@ public class ReservationServiceImpl implements ReservationService {
 
     private final ReservationRepository reservationRepository;
     private final BookRepository bookRepository;
+    private final BorrowRecordRepository borrowRecordRepository;
     private final UserService userService;
     private final NotificationService notificationService;
 
@@ -47,6 +49,10 @@ public class ReservationServiceImpl implements ReservationService {
         User user = userService.getCurrentUserEntity();
         Book book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.BOOK_NOT_FOUND));
+
+        if (borrowRecordRepository.findActiveBorrow(user.getId(), bookId).isPresent()) {
+            throw new BusinessException(ErrorCode.ALREADY_BORROWED);
+        }
 
         // 检查图书是否有库存（有库存不能预约）
         if (book.getAvailableCount() > 0) {
@@ -224,8 +230,10 @@ public class ReservationServiceImpl implements ReservationService {
         User user = userService.getCurrentUserEntity();
 
         // 查找该用户的已通知预约
-        reservationRepository.findNotifiedReservation(user, book).ifPresent(reservation -> {
+        reservationRepository.findActiveReservation(user, book).ifPresent(reservation -> {
             reservation.setStatus(Reservation.Status.FULFILLED);
+            reservation.setNotifiedAt(null);
+            reservation.setExpiresAt(null);
             reservationRepository.save(reservation);
             log.info("用户 {} 完成预约借阅《{}》", user.getUsername(), book.getTitle());
         });

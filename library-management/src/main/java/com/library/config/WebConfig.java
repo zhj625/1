@@ -26,5 +26,14 @@ public class WebConfig implements WebMvcConfigurer {
 
         registry.addResourceHandler("/uploads/**")
                 .addResourceLocations(uploadAbsolutePath);
+
+        // 配置本地图书封面图片目录映射
+        Path imagesPath = Paths.get("../images").toAbsolutePath().normalize();
+        String imagesAbsolutePath = imagesPath.toUri().toString();
+        if (!imagesAbsolutePath.endsWith("/")) {
+            imagesAbsolutePath += "/";
+        }
+        registry.addResourceHandler("/images/**")
+                .addResourceLocations(imagesAbsolutePath);
     }
 }

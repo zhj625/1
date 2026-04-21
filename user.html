@@ -831,7 +831,7 @@
                             </div>
                         </div>
                         <div v-if="fines.length === 0 && !loading" class="text-center py-20">
-                            <img src="https://illustrations.popsy.co/gray/success.svg" class="h-48 mx-auto mb-6 opacity-50">
+                            <div class="h-48 mx-auto mb-6 opacity-50 flex items-center justify-center text-8xl">🎉</div>
                             <p class="text-gray-400">暂无罚款记录，继续保持哦！</p>
                         </div>
                     </div>
@@ -998,7 +998,7 @@
                                 <h3 class="font-bold text-gray-800 mb-2">👋 欢迎加入</h3>
                                 <p class="text-sm text-gray-600 mb-4">在这里，每一本书都能找到知音。请文明发言，共同维护良好的社区氛围。</p>
                                 <div class="flex -space-x-2 overflow-hidden">
-                                    <img v-for="i in 5" :key="i" :src="'https://placehold.co/100x100?text='+i" class="inline-block h-8 w-8 rounded-full ring-2 ring-white" />
+                                    <div v-for="i in 5" :key="i" class="inline-block h-8 w-8 rounded-full ring-2 ring-white bg-indigo-500 flex items-center justify-center text-white text-xs font-bold" :style="{backgroundColor: ['#4f46e5','#7c3aed','#2563eb','#0891b2','#059669'][i-1]}">{{ ['A','B','C','D','E'][i-1] }}</div>
                                 </div>
                                 <div class="text-xs text-gray-400 mt-2">1,203 位书友已加入</div>
                             </div>
@@ -1782,7 +1782,7 @@
                             </div>
                         </div>
                         <div v-if="list.length === 0" class="text-center py-20">
-                            <img src="https://illustrations.popsy.co/gray/surr-reading.svg" class="h-48 mx-auto mb-6 opacity-50">
+                            <div class="h-48 mx-auto mb-6 opacity-50 flex items-center justify-center text-8xl">📖</div>
                             <p class="text-gray-400">书架空空如也，快去书城看看吧</p>
                             <el-button class="mt-4" @click="$router.push('/store')">去逛逛</el-button>
                         </div>
@@ -1847,7 +1847,7 @@
                         <el-skeleton v-for="i in 5" :key="i" animated><template #template><el-skeleton-item variant="image" class="h-64 rounded-2xl mb-2" /></template></el-skeleton>
                     </div>
                     <div v-else-if="list.length === 0" class="text-center py-20">
-                        <img src="https://illustrations.popsy.co/gray/heart.svg" class="h-48 mx-auto mb-6 opacity-50">
+                        <div class="h-48 mx-auto mb-6 opacity-50 flex items-center justify-center text-8xl">💝</div>
                         <p class="text-gray-400 mb-4">还没有收藏任何图书</p>
                         <el-button type="primary" @click="$router.push('/store')">去逛逛书城</el-button>
                     </div>
