@@ -6,4 +6,4 @@
 *.log
 nul
 ~$*
-postman/*-report.json
+test/reports/*.json

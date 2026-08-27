@@ -1,0 +1,82 @@
+{
+  "info": {
+    "_postman_id": "a7ccaa86-d6f2-4fa3-b8a1-e4ad44b24faa",
+    "name": "智慧图书馆系统 - 快速回归",
+    "description": "11 个非破坏性快速回归请求。导入后填写 userPassword。",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "userUsername", "value": "user1" },
+    { "key": "userPassword", "value": "", "type": "secret" },
+    { "key": "userToken", "value": "", "type": "secret" },
+    { "key": "existingBookId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "REG-001 图书列表并保存现有图书 ID",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/books?page=1&size=1" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('图书列表可用', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(j.data.list).to.be.an('array').and.not.empty; pm.collectionVariables.set('existingBookId', j.data.list[0].id); });"] } }]
+    },
+    {
+      "name": "REG-002 图书详情 ID 类型兼容",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/books/{{existingBookId}}" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('HTTP 200 且 ID 一致', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(String(j.data.id)).to.eql(String(pm.collectionVariables.get('existingBookId'))); });"] } }]
+    },
+    {
+      "name": "REG-003 未登录公告受限",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/announcements/published?page=1&size=10" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('未登录返回 401', () => pm.response.to.have.status(401));"] } }]
+    },
+    {
+      "name": "REG-004 未登录最新评论受限",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/reviews/latest?limit=6" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('未登录返回 401', () => pm.response.to.have.status(401));"] } }]
+    },
+    {
+      "name": "REG-005 错误密码业务响应",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"username\": \"regression_missing_user\",\n  \"password\": \"wrong-password\"\n}" },
+        "url": "{{baseUrl}}/api/auth/login"
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('HTTP 200 且业务码非 0', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.not.eql(0); pm.expect(j.message).to.be.a('string').and.not.empty; });"] } }]
+    },
+    {
+      "name": "REG-006 普通用户登录",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"username\": \"{{userUsername}}\",\n  \"password\": \"{{userPassword}}\"\n}" },
+        "url": "{{baseUrl}}/api/auth/login"
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('登录成功并保存令牌', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.collectionVariables.set('userToken', j.data.token); });"] } }]
+    },
+    {
+      "name": "REG-007 获取当前用户",
+      "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }], "url": "{{baseUrl}}/api/auth/me" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('当前用户正确', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(j.data.username).to.eql(pm.collectionVariables.get('userUsername')); });"] } }]
+    },
+    {
+      "name": "REG-008 普通用户越权访问人员管理",
+      "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }], "url": "{{baseUrl}}/api/users?page=1&size=10" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('普通用户越权返回 403', () => pm.response.to.have.status(403));"] } }]
+    },
+    {
+      "name": "REG-009 登录后查询图书评论",
+      "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }], "url": "{{baseUrl}}/api/reviews/book/{{existingBookId}}?page=1&size=10" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('评论分页结构正确', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(j.data.list).to.be.an('array'); });"] } }]
+    },
+    {
+      "name": "REG-010 查询我的罚款",
+      "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }], "url": "{{baseUrl}}/api/fines/me?page=1&size=10" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('罚款分页接口成功', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().code).to.eql(0); });"] } }]
+    },
+    {
+      "name": "REG-011 分类树",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/categories/tree" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('分类树可用', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(j.data).to.be.an('array').and.not.empty; });"] } }]
+    }
+  ]
+}

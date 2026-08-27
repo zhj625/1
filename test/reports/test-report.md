@@ -5,6 +5,7 @@
 本轮接口测试通过。
 
 - 完整集合：48 个请求全部执行成功，48 个测试脚本全部通过，50 个断言全部通过，失败数为 0。
+- 快速回归集合：11 个请求、11 个断言全部通过，失败数为 0。
 - 核心业务闭环：登录、权限校验、图书与分类 CRUD、借阅、重复借阅拦截、续借、预约、归还通知、预约履约、收藏、评论、点赞、罚款查询均通过。
 - 运行状态：后端当前继续监听 `http://localhost:8080`；测试结束后再次请求图书接口，统一响应 `code=0`、`message=ok`。
 - 数据恢复：自动化测试产生的 `Postman` 测试图书、分类、借阅、预约、收藏、评论和通知记录均已精确清理，复核剩余数量均为 0。
@@ -43,12 +44,12 @@
 ### 3.1 复现方式
 
 1. 启动 MySQL 和 Spring Boot 后端。
-2. 将 `smart-library-main.postman_collection.json` 导入 Postman。
+2. 将 `test/postman/smart-library-main.json` 导入 Postman。
 3. 在 Collection Variables 中填写 `adminPassword`、`userPassword`、`secondUserPassword`。
 4. 在 Postman 中运行整个 Collection，或使用 Newman 执行：
 
 ```powershell
-npx -y newman run postman\smart-library-main.postman_collection.json
+npx -y newman run test\postman\smart-library-main.json
 ```
 
 ## 4. 覆盖范围
@@ -60,7 +61,7 @@ npx -y newman run postman\smart-library-main.postman_collection.json
 | 管理端查询 | 11 | 用户、审核、借阅记录、统计、罚款、评论、日志、Excel 导出 | 通过 |
 | CRUD 与业务闭环 | 20 | 分类/图书 CRUD、借阅/续借/预约/归还、通知、收藏、评论、点赞 | 通过 |
 
-完整步骤和预期结果见 `Postman接口测试用例清单.md`。
+完整步骤和预期结果见 `test/testcases/testcase.xlsx`。
 
 ## 5. 关键业务闭环验证
 
@@ -119,8 +120,10 @@ npx -y newman run postman\smart-library-main.postman_collection.json
 
 ## 9. 交付文件
 
-- `smart-library-main.postman_collection.json`：可导入 Postman 的完整主测试集合。导入后需在 Collection Variables 中填写三个测试账号密码变量。
-- `Postman接口测试用例清单.md`：48 条接口测试用例清单。
+- `test/postman/smart-library-main.json`：可导入 Postman 的完整主测试集合。导入后需在 Collection Variables 中填写三个测试账号密码变量。
+- `test/postman/smart-library-regression.json`：11 条关键接口快速回归集合。
+- `test/postman/smart-library-cleanup.json`：测试数据清理与删除保护验证集合。
+- `test/testcases/testcase.xlsx`：格式化的接口测试用例清单。
 - Newman JSON 报告属于可重复生成的构建产物，已通过 `.gitignore` 排除；需要时可按主 Collection 重新生成。
 
 ## 10. 总体判定

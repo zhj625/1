@@ -1,0 +1,74 @@
+{
+  "info": {
+    "_postman_id": "94679a2e-8d1d-4385-a880-2d243d87fe19",
+    "name": "智慧图书馆系统 - 清理与删除保护验证",
+    "description": "删除测试收藏和评论，并验证存在借阅历史时图书、分类不能被直接删除。运行前必须填写本轮 testBookId、testCategoryId 和 reviewId。",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "adminUsername", "value": "admin" },
+    { "key": "adminPassword", "value": "", "type": "secret" },
+    { "key": "userUsername", "value": "user1" },
+    { "key": "userPassword", "value": "", "type": "secret" },
+    { "key": "adminToken", "value": "", "type": "secret" },
+    { "key": "userToken", "value": "", "type": "secret" },
+    { "key": "testBookId", "value": "" },
+    { "key": "testCategoryId", "value": "" },
+    { "key": "reviewId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "CLN-000A 管理员登录",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"username\": \"{{adminUsername}}\",\n  \"password\": \"{{adminPassword}}\"\n}" },
+        "url": "{{baseUrl}}/api/auth/login"
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('管理员登录成功', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.collectionVariables.set('adminToken', j.data.token); });"] } }]
+    },
+    {
+      "name": "CLN-000B 用户登录",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"username\": \"{{userUsername}}\",\n  \"password\": \"{{userPassword}}\"\n}" },
+        "url": "{{baseUrl}}/api/auth/login"
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('用户登录成功', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.collectionVariables.set('userToken', j.data.token); });"] } }]
+    },
+    {
+      "name": "CLN-001 删除测试收藏",
+      "request": { "method": "DELETE", "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }], "url": "{{baseUrl}}/api/favorites/{{testBookId}}" },
+      "event": [
+        { "listen": "prerequest", "script": { "exec": ["if (!pm.collectionVariables.get('testBookId')) { throw new Error('请先填写 testBookId'); }"] } },
+        { "listen": "test", "script": { "exec": ["pm.test('测试收藏已删除', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().code).to.eql(0); });"] } }
+      ]
+    },
+    {
+      "name": "CLN-002 删除测试评论",
+      "request": { "method": "DELETE", "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }], "url": "{{baseUrl}}/api/reviews/{{reviewId}}" },
+      "event": [
+        { "listen": "prerequest", "script": { "exec": ["if (!pm.collectionVariables.get('reviewId')) { throw new Error('请先填写 reviewId'); }"] } },
+        { "listen": "test", "script": { "exec": ["pm.test('测试评论已删除', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().code).to.eql(0); });"] } }
+      ]
+    },
+    {
+      "name": "CLN-003 验证测试图书引用保护",
+      "request": { "method": "DELETE", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/api/books/{{testBookId}}" },
+      "event": [
+        { "listen": "prerequest", "script": { "exec": ["if (!pm.collectionVariables.get('testBookId')) { throw new Error('请先填写 testBookId'); }"] } },
+        { "listen": "test", "script": { "exec": ["pm.test('存在借阅历史的图书受到引用保护', () => { pm.response.to.have.status(409); pm.expect(pm.response.json().code).to.eql(411); });"] } }
+      ]
+    },
+    {
+      "name": "CLN-004 验证测试分类非空保护",
+      "request": { "method": "DELETE", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/api/categories/{{testCategoryId}}" },
+      "event": [
+        { "listen": "prerequest", "script": { "exec": ["if (!pm.collectionVariables.get('testCategoryId')) { throw new Error('请先填写 testCategoryId'); }"] } },
+        { "listen": "test", "script": { "exec": ["pm.test('非空分类受到删除保护', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().code).to.eql(2203); });"] } }
+      ]
+    }
+  ]
+}
