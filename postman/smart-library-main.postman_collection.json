@@ -1,0 +1,403 @@
+{
+  "info": {
+    "_postman_id": "d642b252-ea28-4ba1-9f34-5a535561104c",
+    "name": "智慧图书馆系统 - 主测试集合",
+    "description": "毕业设计接口主测试集合。覆盖公开接口、认证、权限、管理查询和核心业务闭环；不包含删除清理操作。",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "adminUsername", "value": "admin" },
+    { "key": "adminPassword", "value": "", "type": "secret" },
+    { "key": "userUsername", "value": "user1" },
+    { "key": "userPassword", "value": "", "type": "secret" },
+    { "key": "secondUserUsername", "value": "kerry" },
+    { "key": "secondUserPassword", "value": "", "type": "secret" },
+    { "key": "adminToken", "value": "", "type": "secret" },
+    { "key": "userToken", "value": "", "type": "secret" },
+    { "key": "secondUserToken", "value": "", "type": "secret" },
+    { "key": "existingBookId", "value": "" },
+    { "key": "testCategoryId", "value": "" },
+    { "key": "testBookId", "value": "" },
+    { "key": "firstBorrowId", "value": "" },
+    { "key": "secondBorrowId", "value": "" },
+    { "key": "reservationId", "value": "" },
+    { "key": "reviewId", "value": "" },
+    { "key": "testSuffix", "value": "" },
+    { "key": "testCategoryName", "value": "" },
+    { "key": "testIsbn", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "00 公开接口",
+      "item": [
+        {
+          "name": "TC-PUB-001 图书分页列表",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/books?page=1&size=10" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.test('统一响应成功且列表非空', () => { pm.expect(j.code).to.eql(0); pm.expect(j.data.list).to.be.an('array').that.is.not.empty; });",
+            "pm.collectionVariables.set('existingBookId', j.data.list[0].id);"
+          ] } }]
+        },
+        {
+          "name": "TC-PUB-002 图书关键字搜索",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/books?keyword=Java&page=1&size=10" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('HTTP 200 且返回分页结构', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(j.data).to.have.property('total'); });"
+          ] } }]
+        },
+        {
+          "name": "TC-PUB-003 图书详情",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/books/{{existingBookId}}" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('HTTP 200 且 ID 一致', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(String(j.data.id)).to.eql(String(pm.collectionVariables.get('existingBookId'))); });"
+          ] } }]
+        },
+        {
+          "name": "TC-PUB-004 新书推荐",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/books/new-arrivals?days=3650&limit=5" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('HTTP 200 且 data 为数组', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(j.data).to.be.an('array'); });"
+          ] } }]
+        },
+        {
+          "name": "TC-PUB-005 热门图书",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/books/popular?limit=5" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('HTTP 200 且 data 为数组', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(j.data).to.be.an('array'); });"
+          ] } }]
+        },
+        {
+          "name": "TC-PUB-006 分类树",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/categories/tree" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('HTTP 200 且分类非空', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(j.data).to.be.an('array').that.is.not.empty; });"
+          ] } }]
+        },
+        {
+          "name": "TC-PUB-007 未登录访问公告受限",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/announcements/published?page=1&size=10" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('未登录访问公告返回 401', () => pm.response.to.have.status(401));"
+          ] } }]
+        },
+        {
+          "name": "TC-PUB-008 未登录访问最新评论受限",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/reviews/latest?limit=6" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('未登录访问最新评论返回 401', () => pm.response.to.have.status(401));"
+          ] } }]
+        },
+        {
+          "name": "TC-PUB-009 动态封面生成",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/covers/generate?title=PostmanTest&author=Codex" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('HTTP 200 且返回 SVG', () => { pm.response.to.have.status(200); pm.expect(pm.response.headers.get('Content-Type')).to.include('image/svg+xml'); });"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "01 认证与权限",
+      "item": [
+        {
+          "name": "TC-AUTH-001 管理员登录",
+          "request": {
+            "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"{{adminUsername}}\",\n  \"password\": \"{{adminPassword}}\"\n}" },
+            "url": "{{baseUrl}}/api/auth/login"
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('管理员登录成功', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(j.data.user.role).to.eql('ADMIN'); pm.expect(j.data.token).to.be.a('string').and.not.empty; pm.collectionVariables.set('adminToken', j.data.token); });"
+          ] } }]
+        },
+        {
+          "name": "TC-AUTH-002 普通用户 user1 登录",
+          "request": {
+            "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"{{userUsername}}\",\n  \"password\": \"{{userPassword}}\"\n}" },
+            "url": "{{baseUrl}}/api/auth/login"
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('user1 登录成功', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(j.data.user.role).to.eql('USER'); pm.collectionVariables.set('userToken', j.data.token); });"
+          ] } }]
+        },
+        {
+          "name": "TC-AUTH-003 普通用户 kerry 登录",
+          "request": {
+            "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"{{secondUserUsername}}\",\n  \"password\": \"{{secondUserPassword}}\"\n}" },
+            "url": "{{baseUrl}}/api/auth/login"
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('kerry 登录成功', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(j.data.user.role).to.eql('USER'); pm.collectionVariables.set('secondUserToken', j.data.token); });"
+          ] } }]
+        },
+        {
+          "name": "TC-AUTH-004 错误密码被拒绝",
+          "request": {
+            "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"wrong-password\"\n}" },
+            "url": "{{baseUrl}}/api/auth/login"
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('错误密码返回业务错误', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.not.eql(0); pm.expect(j.message).to.be.a('string').and.not.empty; });"
+          ] } }]
+        },
+        {
+          "name": "TC-AUTH-005 未登录访问受保护接口",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/borrows/my?page=1&size=10" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('未登录返回 401', () => pm.response.to.have.status(401));"
+          ] } }]
+        },
+        {
+          "name": "TC-AUTH-006 用户越权访问人员管理",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }], "url": "{{baseUrl}}/api/users?page=1&size=10" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('普通用户越权返回 403', () => pm.response.to.have.status(403));"
+          ] } }]
+        },
+        {
+          "name": "TC-AUTH-007 获取当前用户",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }], "url": "{{baseUrl}}/api/auth/me" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('当前用户为 user1', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(j.data.username).to.eql(pm.collectionVariables.get('userUsername')); });"
+          ] } }]
+        },
+        {
+          "name": "TC-AUTH-008 注册参数校验",
+          "request": {
+            "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"1bad\",\n  \"password\": \"123\",\n  \"email\": \"not-an-email\"\n}" },
+            "url": "{{baseUrl}}/api/auth/register"
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('非法注册参数返回 400', () => { pm.response.to.have.status(400); const j=pm.response.json(); pm.expect(j.code).to.not.eql(0); });"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "02 管理端查询",
+      "item": [
+        {
+          "name": "TC-ADM-001 用户分页",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/api/users?page=1&size=10" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('管理员可查询用户', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(j.data.list).to.be.an('array'); });"] } }]
+        },
+        {
+          "name": "TC-ADM-002 待审核用户",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/api/users/pending?page=1&size=10" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('待审核用户接口成功', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().code).to.eql(0); });"] } }]
+        },
+        {
+          "name": "TC-ADM-003 借阅记录分页",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/api/borrows?page=1&size=10" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('借阅记录接口成功', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(j.data.list).to.be.an('array'); });"] } }]
+        },
+        {
+          "name": "TC-ADM-004 基础统计",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/api/statistics" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('基础统计成功', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().code).to.eql(0); });"] } }]
+        },
+        {
+          "name": "TC-ADM-005 仪表盘统计",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/api/statistics/dashboard" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('仪表盘统计成功', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().code).to.eql(0); });"] } }]
+        },
+        {
+          "name": "TC-ADM-006 高级统计",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/api/statistics/advanced?dimension=all&limit=10" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('高级统计成功', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().code).to.eql(0); });"] } }]
+        },
+        {
+          "name": "TC-ADM-007 罚款规则",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/api/config/fine-rules" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('罚款规则成功', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(j.data).to.have.property('dailyAmount'); });"] } }]
+        },
+        {
+          "name": "TC-ADM-008 罚款记录与统计",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/api/fines/statistics" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('罚款统计成功', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().code).to.eql(0); });"] } }]
+        },
+        {
+          "name": "TC-ADM-009 评论管理列表",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/api/reviews/admin?page=1&size=10" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('评论管理接口成功', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().code).to.eql(0); });"] } }]
+        },
+        {
+          "name": "TC-ADM-010 操作日志",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/api/logs?page=1&size=10" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('操作日志接口成功', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(j.data.list).to.be.an('array'); });"] } }]
+        },
+        {
+          "name": "TC-ADM-011 借阅记录 Excel 导出",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/api/borrows/export?page=1&size=10" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('导出成功且为 Excel', () => { pm.response.to.have.status(200); pm.expect(pm.response.headers.get('Content-Type')).to.include('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); pm.expect(pm.response.responseSize).to.be.above(0); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "03 CRUD 与业务闭环",
+      "item": [
+        {
+          "name": "TC-BIZ-001 创建测试分类",
+          "event": [
+            { "listen": "prerequest", "script": { "exec": [
+              "const suffix = Date.now().toString().slice(-9);",
+              "pm.collectionVariables.set('testSuffix', suffix);",
+              "pm.collectionVariables.set('testCategoryName', 'PostmanTest_' + suffix);",
+              "pm.collectionVariables.set('testIsbn', '978-' + suffix);"
+            ] } },
+            { "listen": "test", "script": { "exec": [
+              "pm.test('分类创建成功', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(j.data.name).to.eql(pm.collectionVariables.get('testCategoryName')); pm.collectionVariables.set('testCategoryId', j.data.id); });"
+            ] } }
+          ],
+          "request": {
+            "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"{{testCategoryName}}\",\n  \"description\": \"Postman 自动化测试分类\",\n  \"sortOrder\": 999\n}" },
+            "url": "{{baseUrl}}/api/categories"
+          }
+        },
+        {
+          "name": "TC-BIZ-002 更新测试分类",
+          "request": {
+            "method": "PUT", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"{{testCategoryName}}\",\n  \"description\": \"Postman 自动化测试分类（已更新）\",\n  \"sortOrder\": 998\n}" },
+            "url": "{{baseUrl}}/api/categories/{{testCategoryId}}"
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('分类更新成功', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(j.data.description).to.include('已更新'); });"] } }]
+        },
+        {
+          "name": "TC-BIZ-003 非法图书参数校验",
+          "request": {
+            "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"\",\n  \"totalCount\": -1\n}" },
+            "url": "{{baseUrl}}/api/books"
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('非法图书参数返回 400', () => { pm.response.to.have.status(400); pm.expect(pm.response.json().code).to.not.eql(0); });"] } }]
+        },
+        {
+          "name": "TC-BIZ-004 创建库存为 1 的测试图书",
+          "request": {
+            "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"isbn\": \"{{testIsbn}}\",\n  \"title\": \"Postman自动化测试图书\",\n  \"author\": \"Codex\",\n  \"publisher\": \"测试出版社\",\n  \"publishDate\": \"2025-01-01\",\n  \"categoryId\": {{testCategoryId}},\n  \"price\": 88.00,\n  \"totalCount\": 1,\n  \"description\": \"仅用于毕业设计接口验收\",\n  \"location\": \"TEST-01\"\n}" },
+            "url": "{{baseUrl}}/api/books"
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('测试图书创建成功', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(j.data.totalCount).to.eql(1); pm.collectionVariables.set('testBookId', j.data.id); });"] } }]
+        },
+        {
+          "name": "TC-BIZ-005 更新测试图书",
+          "request": {
+            "method": "PUT", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"isbn\": \"{{testIsbn}}\",\n  \"title\": \"Postman自动化测试图书（已更新）\",\n  \"author\": \"Codex\",\n  \"publisher\": \"测试出版社\",\n  \"publishDate\": \"2025-01-01\",\n  \"categoryId\": {{testCategoryId}},\n  \"price\": 99.00,\n  \"totalCount\": 1,\n  \"description\": \"用于毕业设计接口验收，已完成更新测试\",\n  \"location\": \"TEST-02\"\n}" },
+            "url": "{{baseUrl}}/api/books/{{testBookId}}"
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('测试图书更新成功', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(j.data.title).to.include('已更新'); });"] } }]
+        },
+        {
+          "name": "TC-BIZ-006 user1 借阅测试图书",
+          "request": {
+            "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"bookId\": {{testBookId}},\n  \"days\": 7\n}" },
+            "url": "{{baseUrl}}/api/borrows"
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('user1 借阅成功', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(j.data.bookId).to.eql(Number(pm.collectionVariables.get('testBookId'))); pm.collectionVariables.set('firstBorrowId', j.data.id); });"] } }]
+        },
+        {
+          "name": "TC-BIZ-007 重复借阅被拦截",
+          "request": {
+            "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"bookId\": {{testBookId}},\n  \"days\": 7\n}" },
+            "url": "{{baseUrl}}/api/borrows"
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('重复借阅返回业务错误', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.not.eql(0); pm.expect(j.message).to.be.a('string').and.not.empty; });"] } }]
+        },
+        {
+          "name": "TC-BIZ-008 user1 续借",
+          "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }], "url": "{{baseUrl}}/api/borrows/{{firstBorrowId}}/renew" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('续借成功且次数增加', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(j.data.renewCount).to.be.at.least(1); });"] } }]
+        },
+        {
+          "name": "TC-BIZ-009 kerry 预约无库存图书",
+          "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{secondUserToken}}" }], "url": "{{baseUrl}}/api/reservations/{{testBookId}}" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('无库存时预约成功', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(j.data.queuePosition).to.be.at.least(1); pm.collectionVariables.set('reservationId', j.data.id); });"] } }]
+        },
+        {
+          "name": "TC-BIZ-010 预约队列查询",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{secondUserToken}}" }], "url": "{{baseUrl}}/api/reservations/queue/{{testBookId}}" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('预约队列至少 1 人', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(j.data.queueLength).to.be.at.least(1); });"] } }]
+        },
+        {
+          "name": "TC-BIZ-011 user1 归还并触发预约通知",
+          "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }], "url": "{{baseUrl}}/api/borrows/{{firstBorrowId}}/return" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('user1 归还成功', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(j.data.status).to.eql(1); });"] } }]
+        },
+        {
+          "name": "TC-BIZ-012 kerry 收到图书可借通知",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{secondUserToken}}" }], "url": "{{baseUrl}}/api/notifications?page=0&size=20" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('通知接口成功', () => pm.response.to.have.status(200));",
+            "const j=pm.response.json();",
+            "pm.test('存在测试图书相关通知', () => { pm.expect(j.code).to.eql(0); const rows=j.data.content || []; pm.expect(rows.some(n => (n.content||'').includes('Postman自动化测试图书') || n.type==='BOOK_AVAILABLE')).to.eql(true); });"
+          ] } }]
+        },
+        {
+          "name": "TC-BIZ-013 kerry 履约借阅",
+          "request": {
+            "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{secondUserToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"bookId\": {{testBookId}},\n  \"days\": 7\n}" },
+            "url": "{{baseUrl}}/api/borrows"
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('预约用户借阅成功', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.collectionVariables.set('secondBorrowId', j.data.id); });"] } }]
+        },
+        {
+          "name": "TC-BIZ-014 kerry 归还",
+          "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{secondUserToken}}" }], "url": "{{baseUrl}}/api/borrows/{{secondBorrowId}}/return" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('kerry 归还成功', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(j.data.status).to.eql(1); });"] } }]
+        },
+        {
+          "name": "TC-BIZ-015 user1 收藏测试图书",
+          "request": {
+            "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"remark\": \"Postman 自动化测试收藏\"\n}" },
+            "url": "{{baseUrl}}/api/favorites/{{testBookId}}"
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('收藏成功', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().code).to.eql(0); });"] } }]
+        },
+        {
+          "name": "TC-BIZ-016 收藏状态与数量",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }], "url": "{{baseUrl}}/api/favorites/check/{{testBookId}}" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('收藏状态为 true', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(j.data).to.eql(true); });"] } }]
+        },
+        {
+          "name": "TC-BIZ-017 user1 评论已借阅图书",
+          "request": {
+            "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"bookId\": {{testBookId}},\n  \"rating\": 5,\n  \"content\": \"Postman 自动化测试评论：借阅流程完整。\"\n}" },
+            "url": "{{baseUrl}}/api/reviews"
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('评论创建成功', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(j.data.rating).to.eql(5); pm.collectionVariables.set('reviewId', j.data.id); });"] } }]
+        },
+        {
+          "name": "TC-BIZ-018 点赞评论",
+          "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{secondUserToken}}" }], "url": "{{baseUrl}}/api/reviews/{{reviewId}}/like" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('点赞接口成功', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().code).to.eql(0); });"] } }]
+        },
+        {
+          "name": "TC-BIZ-019 图书评论列表包含测试评论",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }], "url": "{{baseUrl}}/api/reviews/book/{{testBookId}}?page=1&size=10" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('图书评论列表包含测试评论', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); const rows=j.data.list || []; pm.expect(rows.some(r => String(r.id)===String(pm.collectionVariables.get('reviewId')))).to.eql(true); });"] } }]
+        },
+        {
+          "name": "TC-BIZ-020 用户端综合查询",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }], "url": "{{baseUrl}}/api/fines/me?page=1&size=10" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('我的罚款接口成功', () => { pm.response.to.have.status(200); const j=pm.response.json(); pm.expect(j.code).to.eql(0); pm.expect(j.data.list).to.be.an('array'); });"] } }]
+        }
+      ]
+    }
+  ]
+}

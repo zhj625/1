@@ -277,8 +277,8 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("禁用用户 - 不能禁用管理员")
-    void updateUserStatus_CannotDisableAdmin() {
+    @DisplayName("禁用用户 - 超级管理员可以禁用普通管理员")
+    void updateUserStatus_SuperAdminCanDisableAdmin() {
         // Given
         User anotherAdmin = new User();
         ReflectionTestUtils.setField(anotherAdmin, "id", 3L);
@@ -289,11 +289,39 @@ class UserServiceTest {
         mockCurrentUser(adminUser);
         when(userRepository.findById(3L)).thenReturn(Optional.of(anotherAdmin));
 
+        // When
+        userService.updateUserStatus(3L, User.STATUS_DISABLED);
+
+        // Then
+        assertEquals(User.STATUS_DISABLED, anotherAdmin.getStatus());
+        verify(userRepository).save(anotherAdmin);
+    }
+
+    @Test
+    @DisplayName("禁用用户 - 普通管理员不能禁用其他管理员")
+    void updateUserStatus_RegularAdminCannotDisableAnotherAdmin() {
+        // Given
+        User currentAdmin = new User();
+        ReflectionTestUtils.setField(currentAdmin, "id", 4L);
+        currentAdmin.setUsername("operator");
+        currentAdmin.setRole(User.Role.ADMIN);
+        currentAdmin.setStatus(User.STATUS_ENABLED);
+
+        User anotherAdmin = new User();
+        ReflectionTestUtils.setField(anotherAdmin, "id", 3L);
+        anotherAdmin.setUsername("anotheradmin");
+        anotherAdmin.setRole(User.Role.ADMIN);
+        anotherAdmin.setStatus(User.STATUS_ENABLED);
+
+        mockCurrentUser(currentAdmin);
+        when(userRepository.findById(3L)).thenReturn(Optional.of(anotherAdmin));
+
         // When & Then
         BusinessException exception = assertThrows(BusinessException.class,
                 () -> userService.updateUserStatus(3L, User.STATUS_DISABLED));
 
         assertEquals(ErrorCode.NO_PERMISSION.getCode(), exception.getCode());
+        verify(userRepository, never()).save(anotherAdmin);
     }
 
     private void mockCurrentUser(User user) {
