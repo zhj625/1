@@ -32,13 +32,18 @@
 测试覆盖：JWT 鉴权、角色权限（401/403）、跨角色业务状态流转、负向用例。  
 详细测试报告和用例清单见 [test/README.md](test/README.md)。
 
-## 项目结构smart-library/
-├── library-management/ # Spring Boot 后端 + 单元测试
-├── admin.html # 管理员端页面
-├── user.html # 用户端页面
-├── js/ # 前端公共脚本
-├── images/ # 图片资源
-└── test/ # 接口测试文件（Postman + Newman）
+## 项目结构
+
+```text
+smart-library/
+├── library-management/  # Spring Boot 后端 + 单元测试
+├── admin.html           # 管理员端页面
+├── user.html            # 用户端页面
+├── js/                  # 前端公共脚本
+├── images/              # 图片资源
+└── test/                # 接口测试文件（Postman + Newman）
+```
+
 ## 启动方式
 
 确保 MySQL 已启动并完成数据库配置，然后执行：
